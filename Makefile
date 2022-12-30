@@ -1,5 +1,5 @@
 HEADER_SOURCE := header.adoc
-PDF_RESULT := example-spec.pdf
+PDF_RESULT := RVM-CSI.pdf
 
 all: build
 
@@ -13,7 +13,6 @@ build:
     --failure-level=ERROR \
     --require=asciidoctor-bibtex \
     --require=asciidoctor-diagram \
-    --require=asciidoctor-mathematical \
     --out-file=$(PDF_RESULT) \
     $(HEADER_SOURCE)
 
