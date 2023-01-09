@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     env:
-      NAME: example-spec
+      NAME: RVM-CSI
       APT_PACKAGES_FILE: ${{ github.workspace }}/dependencies/apt_packages.txt
       BUNDLE_GEMFILE: ${{ github.workspace }}/dependencies/Gemfile
       BUNDLE_BIN: ${{ github.workspace }}/bin
