@@ -1,47 +1,120 @@
 [[chapter2]]
-== The Second Chapter
+== The C HAL API
 
-. The first item.
+=== General Principles
 
-. The second item.
-+
-.. The first sub item.
+==== Discovery of Fixed Platform Characteristics at Run-time
 
-.. The second sub item.
-+
-[CAUTION]
-====
-A moment of caution is required for this block of text must be read and apreciated for its importance.
-====
+Since we assume that code is built for a specific platform, it is undesirable to use function-calls (rather than
+macros) to discover fixed platform characteristics; since this constitutes an unnecessary overhead.  However, there
+may be circumstances where a BSP implementation wishes to supply code for this purpose.  For this reason, APIs for discovery
+of some fixed platform characteristics have been implemented to look like a function call.  The assumption is that
+in most cases these function calls can be optimized out by the compiler, leaving no overhead.
 
-. Yet another item.
+==== Distribution in Binary or Source Code Form
 
-. Again, an item.
+BSPs may be supplied either as source code, which the user builds into their system, or as a pre-built binary library.
+To support the latter case, pre-processor directives that are intended to change BSP behaviour (as listed in
+<<Global Definitions Set By Application Writers>>) must only be used in header files, not within the compiled C-code.
 
-.. A multi-line item.
-+
-This item has multiple lines.
-+
-By multiple lines, this is what we mean.
-+
-Seriously, multiple.
+==== Thread Safety
 
-=== An example table
+All API functions shall be implemented in a way that supports simultaneous calls from multiple cores or software threads.
+This is supported through the use of an initialisation function which allocates a separate context space for each instance.
 
-[cols="^1,^1,^1,^1,^3,^3",stripes=even,options="header"]
+=== Header File Structure
+
+Application writers will include a single header file, *rvm_csi.h*, in their code where they wish to include RVM-CSI functionality.
+This header is part of the API definition, and includes several further header files as follows:
+
+[cols="2,1,5",options="header"]
 |===
-4+|Letters _and_ bits {set:cellbgcolor:green} 2+|A much longer area
-|L|R|W|X|Quarter 1|Quarter 2
-|{set:cellbgcolor:!} 0|0|0|0 2+|Rows alternate colors
-|0|0|0|1|Thing 1|Thing 2
-|1|0|0|0|Thing 3|Thing 4
-|1|1|1|1 2+|Span Thing 1 and 2
+|Header|Supplied by|Contents
+|csi_defs.h|API|Definitions which may be used by the BSP-supplied headers (such as return codes etc.)
+|csi_csrs.h|API|Standard CSR definitions, auto-generated from the RISC-V SAIL model
+|csi_bsp_csrs.h|BSP|Custom CSR definitions
+|csi_bsp_perip.h|BSP|Peripheral register definitions
+|csi_bsp_interrupts.h|BSP|Enumeration of interrupt sources in the system
+|csi_bsp_defs.h|BSP|Other macros supplied by the BSP, including macro definitions feeding into the inline functions within csi.h
+|csi.h|API|Defines the HAL API itself. This is included last as it picks up definitions from the other files.  Note that
+this header in turn includes other headers corresponding to different areas of functionality within the API.
 |===
 
-=== Sub section
+All header files must be protected against multiple inclusion, by means of a define which takes the form of a capitalised version
+of the file name, with special characters replaced by underscores.  For example a header file
+csi_bsp_csrs.h will have contents of the form:
+[source, c]
+----
+#ifndef CSI_BSP_CSRS_H
+#define CSI_BSP_CSRS_H
 
-Diam donec adipiscing tristique risus indexterm:[risus]. Nisl rhoncus mattis rhoncus urna. Egestas egestas fringilla phasellus faucibus scelerisque eleifend donec pretium vulputate. Porta non pulvinar neque laoreet suspendisse interdum consectetur libero id. Massa vitae tortor condimentum lacinia quis vel. Donec ac odio tempor orci. Mi sit amet mauris commodo quis imperdiet massa tincidunt. Quis enim lobortis scelerisque fermentum dui. Lacus viverra vitae congue eu. Sed faucibus turpis in eu mi bibendum neque. Sit amet porttitor eget dolor. Aliquet eget sit amet tellus cras adipiscing enim. Id cursus metus aliquam eleifend mi. Vestibulum lorem sed risus ultricies tristique nulla aliquet.
+// ... file contents
 
-=== Yet another subsection
+#endif // CSI_BSP_CSRS_H
+----
 
-Quam lacus suspendisse faucibus interdum posuere lorem ipsum. Nulla aliquet enim tortor at auctor urna nunc id cursus. Massa massa ultricies mi quis hendrerit dolor magna. Integer enim neque volutpat ac tincidunt. Dolor magna eget est lorem ipsum dolor. Urna neque viverra justo nec. Neque gravida in fermentum et. Fringilla ut morbi tincidunt augue interdum velit euismod. Dolor sit amet consectetur adipiscing elit. Eu facilisis sed odio morbi. In cursus turpis massa tincidunt dui. Orci indexterm:[orci] phasellus egestas tellus rutrum tellus. Semper eget duis at tellus at urna condimentum. Orci porta non pulvinar neque laoreet suspendisse interdum consectetur.
+=== Definitions set by BSPs
+
+The following macros must be defined by BSP authors and exposed in the specified header files:
+
+==== Context Sizes
+
+Some modules within the API will require a context space allocated via an initialisation function.
+BSPs will publish macros defining the required size of each such context space in bytes, either
+in csi_bsp_defs.h or in the same header as the associated initialisation function.
+
+==== CSRs (Control and Status Registers)
+
+Standard RISC-V CSRs are defined in https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h.
+However this is an internal file forming part of the Spike simulator; and such files cannot be treated as forming a
+public API; they are likely subject to backwards-incompatible changes.
+
+Instead, the true "Source of Truth" for this information should be considered to be the RISC-V SAIL model.
+csi_csrs.h, forming part of the API, is auto-generated from the SAIL model (a version of which forms a submodule
+of the RVM-CSI specification repo).  This header file lists all standard CSR indeces and bit masks / shifts.
+In this file, CSR indeces are prefixed CSR_.  Bit shifts for fields within CSRs are prefixed CSR_SHIFT_, and
+masks for bitfields are prefixed CSR_MASK_.
+
+In addition, csi_bsp_csrs.h should enumerate all custom CSR names, addresses and bit-fields in a similar way.
+Custom CSR indeces are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and
+masks for bitfields within custom CSRs are prefixed CCSR_MASK_.
+
+==== Peripheral Registers
+
+csi_bsp_perip.h should publish macros listing all peripheral register names, addresses and bit-fields.
+
+Peripheral register address definitions are prefixed PERIP_.  Shifts and masks for bit-fields within those
+registers are prefixed PERIP_SHIFT_ and PERIP_MASK_ respectively.
+
+==== Interrupts
+
+csi_defs.h enumerates a set of standard interrupt sources, such as system timer, and hardware-generated exceptions.
+
+csi_bsp_interrupts.h should enumerate all platform-specific interrupts in the system, giving them unique identification numbers
+that follow on from the interrupt numbers in csi_defs.h.
+
+The numerical values of these enumerations bear no relationship to hardware; they are simply unique numbers assigned
+arbitrarily to the interrupt sources, allowing them to be indexed by the software.  The enumerations are prefixed INT_.
+
+=== Global Definitions Set By Application Writers
+
+The following macros may be defined globally by application writers, in order to change the behaviour of the underlying BSP code:
+
+[cols="3,2,6",options="header"]
+|===
+|Macro|Possible values|Purpose
+|CSI_UPRINT_OUTPUT|NONE / SEMIHOST / UART / CIRCBUFF
+a|Determines the text output mode of the csi_uprintf function.
+
+* NONE=function has no effect;
+* SEMIHOST=function routes to semihosting if available;
+* UART=function routes to UART;
+* CIRCBUF=function routes to circular buffer.
+
+See csi_uprintf description for details.  If the macro is undefined,
+behaviour defaults to SEMIHOST, in which case behaviour is undefined if a semihosting mechanism is unavailable.
+|CSI_LOG_LEVEL|ERR / WARN / INFO / NONE|Determines the behaviour of the macros CSI_LOG_ERR, CSI_LOG_WARN and
+CSI_LOG_INFO.  See documentation of these macros for details.
+|===
+
+include::auto-gen/modules/csi_defs_h.adoc[]
