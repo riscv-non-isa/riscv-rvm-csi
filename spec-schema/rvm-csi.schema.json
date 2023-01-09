@@ -246,7 +246,7 @@
       }
     },
     "additionalProperties": false,
-    "required": ["version","boilerplate"],
+    "required": ["version","boilerplate","adoc-optimization","top-heading-level"],
     "properties": {
       "version": {
         "description": "Specification version number",
@@ -263,6 +263,15 @@
       "boilerplate": {
         "description": "Boiler plate comment to appear at top of each file",
         "type": "string"
+      },
+      "adoc-optimization": {
+        "description": "Selects the type of final output that .adoc documentation will be optimized for",
+        "type": "string",
+        "enum": ["pdf", "html"]
+      },
+      "top-heading-level": {
+        "description": "Highest heading level in the documentation. 0 means highest level is title level.",
+        "type": "integer"
       },
       "notes": {
         "type": "array",

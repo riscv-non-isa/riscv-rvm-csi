@@ -56,7 +56,7 @@ The final specification form of PDF can be generated using the `make` command.
 The APIs for the RVM-CSI Hardware Adaption Layer (HAL) are derived from a Single Source of Truth (SSoT) in YAML format.
 This YAML is parsed by a python parsing tool which propagates the information into API source files (potentially for
 multiple languages) and documentation files in .adoc format.  The YAML SSoT is found in the `api` folder.  It follows a schema
-which can be found in the `api/schema` folder.  The make process will validate the SSoT YAML against this schema, then
+which can be found in the `spec-schema` folder.  The make process will validate the SSoT YAML against this schema, then
 run the parser to generate C header files in the `api/C/include` folder, and docs in the `auto-gen` folder.
 
 The content of the `api/C/include` and `auto-gen` folders must therefore not be manually edited.  Instead, edit the SSoT

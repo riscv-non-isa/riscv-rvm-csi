@@ -1,8 +1,9 @@
 import sys, json
 import argparse, yaml, jsonschema
 import header_gen, doc_gen
+import os.path
 
-default_schema_file_path = "../"
+default_schema_file_path = os.path.join(os.path.dirname(__file__), "..")
 default_schema_file_name = "rvm-csi.schema.json"
 
 def parse_arguments(argv):
@@ -63,8 +64,7 @@ def main(argv):
     options = parse_arguments(argv)
     api_definition = load_api_definition(options.infile)
     
-    # TODO work out where schema will be stored - in common repository?
-    schema = load_api_schema(default_schema_file_path + default_schema_file_name)
+    schema = load_api_schema(os.path.join(default_schema_file_path, default_schema_file_name))
 
     validate_json_schema(api_definition, schema)
     
