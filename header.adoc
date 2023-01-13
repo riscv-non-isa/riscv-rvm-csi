@@ -1,7 +1,7 @@
 [[header]]
-:description: RISC-V Example Specification Document (Zexmpl)
+:description: RVM-CSI Specification Document
 :company: RISC-V.org
-:revdate: 1/2022
+:revdate: 12/2022
 :revnumber: 1.0
 :revremark: This document is in development. Assume everything can change. See http://riscv.org/spec-state for details.
 :url-riscv: http://riscv.org
@@ -36,8 +36,8 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= RISC-V Example Specification Document (Zexmpl)
-Author 1; Author 2; RISC-V Task Group
+= RVM-CSI (Risc-V eMbedded - Common Software Interface) Specification Document
+RISC-V RVM-CSI Version 1 Specification Task Group
 
 // Preamble
 [WARNING]

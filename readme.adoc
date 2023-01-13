@@ -1,10 +1,9 @@
-= RISC-V docs-spec-template
+= RVM-CSI Specification Repo
 
-This repository is used to prime GitHub repos for the RISC-V organization which will be used
-to create specifications.
-
-**If you are reading this in a specification repo, please update the title for this section and
-provide your introduction to your repository.**
+This repository contains the specification for RVM-CSI (Risc-V eMbedded - Common Software
+Interface).  This defines a programming layer aimed at source-code compatibility across
+embedded platforms, and defines the format of Board Support Packs (BSPs) supplying code
+conforming to that interface.
 
 = License
 
@@ -51,3 +50,16 @@ in the PDF build fail with an error message like the following:
 = Building the document
 
 The final specification form of PDF can be generated using the `make` command.
+
+= Modifying the Specification
+
+The APIs for the RVM-CSI Hardware Adaption Layer (HAL) are derived from a Single Source of Truth (SSoT) in YAML format.
+This YAML is parsed by a python parsing tool which propagates the information into API source files (potentially for
+multiple languages) and documentation files in .adoc format.  The YAML SSoT is found in the `api` folder.  It follows a schema
+which can be found in the `spec-schema` folder.  The make process will validate the SSoT YAML against this schema, then
+run the parser to generate C header files in the `api/C/include` folder, and docs in the `auto-gen` folder.
+
+The content of the `api/C/include` and `auto-gen` folders must therefore not be manually edited.  Instead, edit the SSoT
+YAML in the `api` folder.
+
+After running the parser, the make process runs `asciidoctor-pdf` to produce a PDF specification document.
