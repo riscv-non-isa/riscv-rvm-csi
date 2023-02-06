@@ -44,3 +44,13 @@ indexterm:[Application Writers]
 functionality in the API. (This could also be implemented within a language runtime). indexterm:[Board Support Pack]
 indexterm:[BSP]
 
+=== Assumed Features of Underlying Hardware
+
+==== Privilege Levels
+
+We assume that systems targeted by RVM-CSI will require either Machine-mode only, or Machine mode + User mode.
+No functionality is provided to target Hypervisor, Supervisor or VS privilege modes.
+
+==== Virtual Memory
+
+RVM-CSI does not support virtual addressing.

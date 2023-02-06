@@ -61,8 +61,16 @@ def format_c_type_declaration(declaration):
         return "    "   # indent 4 spaces 
     
     out_str = ""
-     
-    # values can be "struct", "enum", "int", "unsigned"
+    if 'description' in declaration.keys():
+        out_str += "/*\n "
+        out_str += format_c_comment_lines(declaration['description'])
+        if 'func-typedef-params' in declaration.keys():
+            out_str += "*\n "
+            for param in declaration['func-typedef-params']:
+                out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])
+        out_str += "*/\n"
+
+    # values can be "struct", "enum", "int", "unsigned", "function"
     c_type = declaration['type']
     if c_type == "int":
         out_str += "typedef int " + declaration['name'] + ";\n"
@@ -75,10 +83,13 @@ def format_c_type_declaration(declaration):
         for member in declaration['enum-members']:
             out_str += indent() + member['name'] 
             if 'value' in member.keys():
-                out_str += " = " + str(member['value']) 
-            out_str += ",\n" # trailing comma should be valid for modern compilers
+                out_str += " = " + str(member['value'])
+            out_str += "," # trailing comma should be valid for modern compilers
+            if 'description' in member.keys():
+                out_str += " /* " + member['description'] + " */"
+            out_str += "\n"
         out_str += "} " + declaration['name'] + ";\n"
-            
+
     elif c_type == "struct":
         out_str += "typedef struct {\n"
         for member in declaration['struct-members']:
@@ -89,7 +100,25 @@ def format_c_type_declaration(declaration):
             
             out_str += indent() + member_type + delimiter + member['name'] + ";\n"
         out_str += "} " + declaration['name'] + ";\n"
-        
+    
+    elif c_type == "function":
+        retval = "void"
+        params = "void"
+        if 'func-typedef-retval' in declaration.keys():
+            retval = declaration['func-typedef-retval']
+        if 'func-typedef-params' in declaration.keys():
+            params = ''
+            for param in declaration['func-typedef-params']:
+                param_type = param['type']
+                param_name = param['name']
+                if param_type[-1] == '*':
+                    # pointer types - present with spacing as "int *a" 
+                    param_type = param_type.rstrip('* ')
+                    param_name = "*" + param_name                          
+                params += param_type + " " + param_name + ", "
+            params = params.rstrip(", ") # Get rid of last comma/space
+        out_str += "typedef " + retval + " (" + declaration['name'] + ")(" + params + ");\n"
+
     else:
         raise('undefined C type definition')   # Should not be possible to reach here            
     
@@ -108,7 +137,13 @@ def format_c_function(function):
     out_str = "/*\n "
         
     out_str += format_c_comment_lines(function['description'])
-            
+    out_str += "*\n "
+    if 'c-params' in function.keys():
+        for param in function['c-params']:
+            out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])
+    if 'c-return-value' in function.keys():
+        out_str += format_c_comment_lines("@return " + ": " + function['c-return-value']['description'])
+
     # Close comment
     out_str += "*/\n"
     

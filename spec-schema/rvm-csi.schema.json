@@ -99,7 +99,7 @@
       "c-type": {
         "description": "C type",
         "type": "string",
-        "enum": ["struct", "enum", "int", "unsigned"]
+        "enum": ["struct", "enum", "int", "unsigned", "function"]
       },
       "c-type-prefix": {
         "description": "C type prefix (const, static, inline etc.)",
@@ -134,6 +134,10 @@
           "value": {
             "description": "C enum member value",
             "type": "integer"
+          },
+          "description": {
+            "description": "Enumerated value description",
+            "type": "string"
           }
         }
       },
@@ -170,6 +174,17 @@
             "type": "array",
             "items": {
               "$ref": "#/definitions/c-enum-entry"
+            }
+          },
+          "func-typedef-retval": {
+            "description": "Function return value for typedef",
+            "type": "string"
+          },
+          "func-typedef-params": {
+            "description": "Function parameter list for typedef (note the list may be absent, in which case there is a single void parameter)",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-function-param"
             }
           }
         }

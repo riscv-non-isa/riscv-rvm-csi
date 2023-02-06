@@ -33,7 +33,13 @@ def format_adoc_type_declaration(declaration):
         out_str += heading_marker(4) + "Values\n"
         
         for member in declaration['enum-members']:
-            out_str += "*" + member['name'] + "*\n\n" 
+            out_str += "*" + member['name'] + "*"
+            if 'value' in member.keys():
+                out_str += " = " + str(member['value'])
+            out_str += "\n"
+            if 'description' in member.keys():
+                out_str += member['description'] + "\n"
+            out_str += "\n"
 
     if c_type == "struct":
         out_str += heading_marker(4) + "Members\n"
@@ -44,7 +50,24 @@ def format_adoc_type_declaration(declaration):
             if member_type[-1] == '*': # pointer
                 delimiter = ""
             out_str += member_type + delimiter + member['name'] + "\n\n"
-                             
+
+    if c_type == "function":    
+        out_str += heading_marker(4) + "Parameters\n"
+        if 'func-typedef-params' in declaration.keys():
+            for param in declaration['func-typedef-params']:
+                param_type = param['type']
+                param_name = param['name']
+                if param_type[-1] == '*': # pointer
+                    param_type = param_type.rstrip('* ')
+                    param_name = "*" + param_name
+                out_str += param_type + " `" + param_name + "` - " + param['description'] + "\n\n"
+                
+                if 'notes' in param.keys():
+                    out_str += format_text_from_array(param['notes'])
+                out_str += "\n"
+        else:
+            out_str += "Function takes no parameters\n\n"
+
     return out_str
 
 def format_adoc_function(function, module_type_list):
@@ -100,7 +123,9 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization):
     filename = module['c-filename'].lower().replace('.','_') + ".adoc"    
     out_file = pathlib.Path(out_dir, module_sub_dir, filename)
     
-    out_str = "[#title]\n"
+    out_str = "indexterm:[" + module['c-filename'] + "]\n\n"
+    if adoc_optimization == 'html':
+        out_str += "[#title]\n"
     out_str += heading_marker(1) + module['c-filename'] + " - " + module['name'] + "\n"
     out_str += ":toc:\n"
     

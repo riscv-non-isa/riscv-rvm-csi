@@ -96,6 +96,9 @@ that follow on from the interrupt numbers in csi_defs.h.
 The numerical values of these enumerations bear no relationship to hardware; they are simply unique numbers assigned
 arbitrarily to the interrupt sources, allowing them to be indexed by the software.  The enumerations are prefixed INT_.
 
+csi_bsp_interrupts.h should also define CSI_MAX_INTERRUPT_PRIORITY which defines the number of of non-zero interrupt
+priorities available.
+
 === Global Definitions Set By Application Writers
 
 The following macros may be defined globally by application writers, in order to change the behaviour of the underlying BSP code:
@@ -118,3 +121,4 @@ CSI_LOG_INFO.  See documentation of these macros for details.
 |===
 
 include::auto-gen/modules/csi_defs_h.adoc[]
+include::auto-gen/modules/csi_interrupts_h.adoc[]
