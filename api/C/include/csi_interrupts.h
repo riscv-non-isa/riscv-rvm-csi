@@ -38,10 +38,11 @@ typedef void (csi_isr_t)(int source, void *isr_ctx, unsigned mtval);
 /*
  * Function prototype for the user's timeout callback function (M-mode or U-mode)
  *
- * @param handle: Handle for this timeout instance, as passed into csi_set_timeout
+ * @param timeout_handle: Handle for this timeout instance, as passed into
+ * csi_set_timeout
  * @param callback_context: Context pointer that was passed into csi_set_timeout
  */
-typedef void (csi_timeout_callback_t)(csi_timeout_t *handle, void *callback_context);
+typedef void (csi_timeout_callback_t)(csi_timeout_t *timeout_handle, void *callback_context);
 
 
 /*
@@ -60,17 +61,9 @@ typedef void (csi_timeout_callback_t)(csi_timeout_t *handle, void *callback_cont
  * @param mctx_size: Size of memory allocated at the mctx pointer in bytes.
  * Allocating more than CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES may permit additional
  * M-mode handlers to be registered.
- * @param uctx: Pointer to an area of memory to be used as U-mode context space for
- * the interrupt subsystem.  The BSP will define a macro
- * CSI_INTERRUPT_UCTX_MIN_SIZE_BYTES which defines the minimum required size of
- * this context space in bytes.  Calling this function initializes the context
- * space.
- * @param uctx_size: Size of memory allocated at the uctx pointer in bytes.
- * Allocating more than CSI_INTERRUPT_UCTX_MIN_SIZE_BYTES may permit additional
- * U-mode handlers to be registered.
  * @return : Status of initialisation operation
  */
-csi_status_t csi_interrupts_init(void *mctx, unsigned mctx_size, void *uctx, unsigned uctx_size);
+csi_status_t csi_interrupts_init(void *mctx, unsigned mctx_size);
 
 /*
  * Un-initialize the interrupt and timer sub-system.  After calling this function,
@@ -84,12 +77,14 @@ csi_status_t csi_interrupts_init(void *mctx, unsigned mctx_size, void *uctx, uns
 csi_status_t csi_interrupts_uninit(void *mctx);
 
 /*
- * This function is run from U-mode to obtain the U-mode context pointer previously
- * passed into csi_interrupts_init for the current hart.
+ * This function is run from U-mode to obtain a handle that can be used to
+ * reference the interrupt sub-system for the current hart.  (This will usually be
+ * the address of mctx as passed into csi_interrupts_init, which can be de-
+ * referenced by M-mode code but not U-mode).
  *
- * @return : context pointer, or null pointer if inapplicable.
+ * @return : IRQ system handle, or 0 if inapplicable.
  */
-void * get_interrupts_u_ctx(void);
+unsigned get_interrupts_u_handle(void);
 
 /*
  * Registers a user-supplied function (isr) that will be called in M-mode by the
@@ -126,10 +121,13 @@ csi_status_t csi_register_m_isr(void *mctx, csi_isr_t *isr, void *isr_ctx, int s
  * signal number and mtval contents.  This function transparently deals with
  * routing the desired signal to the hart and enabling the interrupt.  This
  * function must run in user mode.  Running this function with a NULL pointer for
- * the isr parameter will un-register a previously registered handler.
+ * the isr parameter will un-register a previously registered handler.  Note that
+ * before registering a user mode handler for a source,
+ * csi_set_umode_trap_permissions must have been run (from machine mode) in order
+ * to enable handling of the trap in U-mode.
  *
- * @param uctx: U-mode context pointer previously initialised by
- * csi_interrupts_init.
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
  * @param isr: Pointer to the user's handler function; or NULL pointer to un-
  * register a handler
  * @param isr_ctx: Pointer to the user's context.  This will be passed into the
@@ -146,7 +144,7 @@ csi_status_t csi_register_m_isr(void *mctx, csi_isr_t *isr, void *isr_ctx, int s
  * calling this function. CSI_OUT_OF_MEM will be returned if the number of handlers
  * registered exceeds that supported by the context size.
  */
-csi_status_t csi_register_u_isr(void *uctx, csi_isr_t *isr, void *isr_ctx, int source);
+csi_status_t csi_register_u_isr(unsigned irq_system_handle, csi_isr_t *isr, void *isr_ctx, int source);
 
 /*
  * Disable a trap source.  This function must be run in machine mode.  Note that
@@ -189,8 +187,8 @@ csi_status_t csi_enable_m_trap_source(void *mctx, int source);
  * running of the handler.  Device drivers may offer separate controls for turning
  * their interrupts on and off at source.
  *
- * @param uctx: U-mode context pointer previously initialised by
- * csi_interrupts_init.
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
  * @param source: Enumerated interrupt / exception source.  This must be one of the
  * enumerations from csi_trap_source_t, or a value from the BSP (extending the
  * enumerations in csi_trap_source_t) enumerating a platform-specific external
@@ -198,7 +196,7 @@ csi_status_t csi_enable_m_trap_source(void *mctx, int source);
  * @return : Status of disable operation.  CSI_ERROR will be returned if the source
  * parameter is invalid.
  */
-csi_status_t csi_disable_u_trap_source(void *uctx, int source);
+csi_status_t csi_disable_u_trap_source(unsigned irq_system_handle, int source);
 
 /*
  * Enable handling of a trap arising from a particular source.  This function must
@@ -207,8 +205,8 @@ csi_status_t csi_disable_u_trap_source(void *uctx, int source);
  * running of the handler.  Device drivers may offer separate controls for turning
  * their interrupts on and off at source.
  *
- * @param uctx: U-mode context pointer previously initialised by
- * csi_interrupts_init.
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
  * @param source: Enumerated interrupt / exception source.  This must be one of the
  * enumerations from csi_trap_source_t, or a value from the BSP (extending the
  * enumerations in csi_trap_source_t) enumerating a platform-specific external
@@ -216,16 +214,17 @@ csi_status_t csi_disable_u_trap_source(void *uctx, int source);
  * @return : Status of enable operation.  CSI_ERROR will be returned if the source
  * parameter is invalid.
  */
-csi_status_t csi_enable_u_trap_source(void *uctx, int source);
+csi_status_t csi_enable_u_trap_source(unsigned irq_system_handle, int source);
 
 /*
  * Enable or disable 3 classes of interrupts for this hart.  Must be run in machine
  * mode.
  *
- * @param int_enables: Set bit 3 to enable software interrupts.  Set bit 7 to
- * enable timer interrupts.  Set bit 11 to enable external interrupts.  Setting
- * these bits to zero will disable each interrupt source respectively.  All other
- * bits should be left at zero.
+ * @param int_enables: This word will be written directly to the mie CSR in order
+ * to control whether software interrupts, timer interrupts and external interrupts
+ * are enabled.  To enable all 3 classes of interrupts, pass a value of
+ * CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE |
+ * CSI_EXT_INTERRUPTS_ENABLE.  To disable all interrupts, pass a value of 0.
  * @return : Integer in the same format as int_enables, reflecting the previous
  * value of int_enables prior to the change.  This may be stored and passed back
  * into another call to csi_set_interrupt_enables in order to restore the previous
@@ -277,7 +276,20 @@ csi_status_t csi_define_sw_signal(void *mctx, int signal, int hartid);
  * @return : Status of operation.  CSI_ERROR will be returned if the specified
  * signal is not software-raisable.
  */
-csi_status_t csi_raise_sw_signal(void *mctx, int signal);
+csi_status_t csi_raise_m_sw_signal(void *mctx, int signal);
+
+/*
+ * Raises a software signal, previously defined using csi_define_sw_signal.  Must
+ * be run in user mode. User-mode permissions for the selected signal must have
+ * been set by previously running csi_set_umode_trap_permissions.
+ *
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
+ * @param signal: Source enumeration for this signal.
+ * @return : Status of operation.  CSI_ERROR will be returned if the specified
+ * signal is not software-raisable.
+ */
+csi_status_t csi_raise_u_sw_signal(unsigned irq_system_handle, int signal);
 
 /*
  * Set priority for an interrupt source.  Priorities range from 0 to
@@ -317,7 +329,7 @@ int csi_get_irq_priority(void *mctx, int signal);
 csi_status_t csi_set_irq_priority_thresh(void *mctx, int threshold);
 
 /*
- * Get the current priority threshold for interrupts
+ * Get the current priority threshold for interrupts  Must be run in machine mode.
  *
  * @param mctx: M-mode context pointer previously initialised by
  * csi_interrupts_init.
@@ -337,54 +349,91 @@ int csi_get_irq_priority_thresh(void *mctx);
 void csi_force_ext_irq(void *mctx, int signal);
 
 /*
- * RISC-V hardware has a single timer implemented as a counter running at some
- * defined frequency, and a compare register.  An interrupt is generated when the
- * count hits the compare register value. This function configures the timer and
- * compare register to produce a regular timer interrupt at the configured tick
- * rate, and enables a handler within the BSP to service those interrupts.  This
- * base timer handler can then service multiple timed events that may be configured
- * using csi_set_timeout. This function must be run in machine mode.  Care must be
- * taken since the timer services all harts in the system, so this function can
- * affect the operation of code on other harts.
+ * Set the frequency of the system timer.  Note that there is typically a single
+ * timer for all harts in the system, so this function can affect the operation of
+ * other harts.  The timer will be compared against a compare register for each
+ * hart in order to produce a regular timer interrupt at a tick rate configured
+ * using csi_set_timer_tick, which is used for timing purposes. This function must
+ * run in machine mode.
  *
- * @param tick_period_us: Timer tick period in microseconds.  Longer tick periods
- * put less load on the system (due to servicing interrupts), but limit the
- * accuracy of any timed events. Passing a value of 0 for the tick period disables
- * the timer and turns off timer interrupts.
+ * @param timer_freq_mhz: System timer frequency in MHz
  * @return : Status of operation.  CSI_ERROR will be returned if the request is
  * invalid.
  */
-csi_status_t csi_timer_config(unsigned tick_period_us);
+csi_status_t csi_timer_config(unsigned timer_freq_mhz);
+
+/*
+ * This function causes the BSP to register a base handler for timer interrupts and
+ * to control the value of the mtimecmp register in order to produce a regular
+ * timer tick interrupt at the requested frequency.   This base timer handler can
+ * then service multiple timed events that may be configured using csi_set_timeout.
+ * This function must be run in machine mode.
+ *
+ * @param mctx: M-mode context pointer previously initialised by
+ * csi_interrupts_init.
+ * @param tick_period_us: Timer tick period in microseconds.  Longer tick periods
+ * put less load on the system (due to servicing interrupts), but limit the
+ * accuracy of any timed events. Passing a value of 0 for the tick period turns off
+ * timer interrupts.
+ * @return : Status of operation.  CSI_ERROR will be returned if the request is
+ * invalid.
+ */
+csi_status_t csi_set_timer_tick(void *mctx, unsigned tick_period_us);
 
 /*
  * Registers a callback function (callback) which will be called after a period set
  * by timeout_ticks unless cancelled with cs_cancel_timeout().  callback_context
  * will be passed into the user's callback function.  The structure pointed to by
- * handle will be initialised by this function and used as a handle for this
- * timeout instance.  This function may be run in either machine mode or user mode.
+ * timeout_handle will be initialised by this function and used as a handle for
+ * this timeout instance.  This function must be run in machine mode.
  *
- * @param handle: Handle for this timeout instance.  The structure declaration
- * csi_timeout_t is published by the BSP in csi_bsp_interrupts.h but should be
- * considered private to the BSP.  Application code instantiates this structure and
- * passes in a pointer to it.
+ * @param mctx: M-mode context pointer previously initialised by
+ * csi_interrupts_init.
+ * @param timeout_handle: Handle for this timeout instance.  The structure
+ * declaration csi_timeout_t is published by the BSP in csi_bsp_interrupts.h but
+ * should be considered private to the BSP.  Application code instantiates this
+ * structure and passes in a pointer to it.
  * @param callback: Pointer to the users callback function, to be called when the
  * timeout expires.
  * @param callback_context: Pointer to the user's context space, which will be
  * passed into the callback function.
- * @param timeout_ticks: Timeout period in ticks (configured by csi_timer_config)
+ * @param timeout_ticks: Timeout period in ticks (configured by csi_set_timer_tick)
  * @return : Status of operation.
  */
-csi_status_t csi_set_timeout(csi_timeout_t *handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks);
+csi_status_t csi_set_m_timeout(void *mctx, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks);
+
+/*
+ * Registers a callback function (callback) which will be called after a period set
+ * by timeout_ticks unless cancelled with cs_cancel_timeout().  callback_context
+ * will be passed into the user's callback function.  The structure pointed to by
+ * timeout_handle will be initialised by this function and used as a handle for
+ * this timeout instance.  This function must be run in user mode.
+ *
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
+ * @param timeout_handle: Handle for this timeout instance.  The structure
+ * declaration csi_timeout_t is published by the BSP in csi_bsp_interrupts.h but
+ * should be considered private to the BSP.  Application code instantiates this
+ * structure and passes in a pointer to it.
+ * @param callback: Pointer to the users callback function, to be called when the
+ * timeout expires.
+ * @param callback_context: Pointer to the user's context space, which will be
+ * passed into the callback function.
+ * @param timeout_ticks: Timeout period in ticks (configured by csi_set_timer_tick)
+ * @return : Status of operation.
+ */
+csi_status_t csi_set_u_timeout(unsigned irq_system_handle, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks);
 
 /*
  * Cancels a timeout previously configured with csi_set_timeout, using the
  * associated handle. Cancelling a timer that has already expired is not an error.
+ * This function may be run in either machine mode or user mode.
  *
- * @param handle: handle for this timeout instance, previously initialised with
- * csi_set_timeout
+ * @param timeout_handle: handle for this timeout instance, previously initialised
+ * with csi_set_timeout
  * @return : Status of operation.
  */
-csi_status_t csi_cancel_timeout(csi_timeout_t *handle);
+csi_status_t csi_cancel_timeout(csi_timeout_t *timeout_handle);
 
 
 #endif /* CSI_INTERRUPTS_H */ 

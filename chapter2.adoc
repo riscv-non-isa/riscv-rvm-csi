@@ -103,7 +103,6 @@ csi_bsp_interrupts.h should also define the following macros and types:
 |Definition|Type|Purpose
 |CSI_MAX_INTERRUPT_PRIORITY|Macro|Number of of non-zero interrupt priorities available
 |CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES|Macro|Miniumum size of M-mode context space for interrupt sub-system
-|CSI_INTERRUPT_UCTX_MIN_SIZE_BYTES|Macro|Miniumum size of U-mode context space for interrupt sub-system
 |csi_timeout_t|struct|Context structure associated with a timeout
 |===
 
