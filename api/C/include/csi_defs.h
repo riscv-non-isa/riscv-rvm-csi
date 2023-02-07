@@ -1,8 +1,8 @@
 /*
  * General-Purpose Definitions for use in CSI code
  *
- * This file is included prior to all other headers and contains general-purpose
- * definitions which may be used by subsequent headers.
+ * This file is included from rvm_csi.h prior to all other headers and contains
+ * general-purpose definitions which may be used by subsequent headers.
  *
  * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
  * generated file: DO NOT EDIT

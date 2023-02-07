@@ -96,8 +96,16 @@ that follow on from the interrupt numbers in csi_defs.h.
 The numerical values of these enumerations bear no relationship to hardware; they are simply unique numbers assigned
 arbitrarily to the interrupt sources, allowing them to be indexed by the software.  The enumerations are prefixed INT_.
 
-csi_bsp_interrupts.h should also define CSI_MAX_INTERRUPT_PRIORITY which defines the number of of non-zero interrupt
-priorities available.
+csi_bsp_interrupts.h should also define the following macros and types:
+
+[cols="3,2,6",options="header"]
+|===
+|Definition|Type|Purpose
+|CSI_MAX_INTERRUPT_PRIORITY|Macro|Number of of non-zero interrupt priorities available
+|CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES|Macro|Miniumum size of M-mode context space for interrupt sub-system
+|CSI_INTERRUPT_UCTX_MIN_SIZE_BYTES|Macro|Miniumum size of U-mode context space for interrupt sub-system
+|csi_timeout_t|struct|Context structure associated with a timeout
+|===
 
 === Global Definitions Set By Application Writers
 

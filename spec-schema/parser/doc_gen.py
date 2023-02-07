@@ -135,8 +135,9 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization):
         out_str += heading_marker(2) + "Notes\n"
     
     if 'notes' in module.keys():
-        out_str += format_text_from_array(module['notes'])
-        out_str += "\n"
+        for note in module['notes']:
+            out_str += note
+            out_str += "\n\n"
     
     if 'c-specific-notes' in module.keys():
         out_str += format_text_from_array(module['c-specific-notes'])
