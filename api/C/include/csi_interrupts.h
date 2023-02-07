@@ -435,5 +435,15 @@ csi_status_t csi_set_u_timeout(unsigned irq_system_handle, csi_timeout_t *timeou
  */
 csi_status_t csi_cancel_timeout(csi_timeout_t *timeout_handle);
 
+/*
+ * Read the current timer value.  This function can be called from M-mode or
+ * U-mode.  However, on systems where the timer is not directly readable from
+ * U-mode, the function will have to ECALL to M-mode to make the read, which will
+ * likely make the value innaccurate due to the delay incurred by this.
+ *
+ * @return : Current timer value
+ */
+long long csi_read_mtime(void);
+
 
 #endif /* CSI_INTERRUPTS_H */ 
