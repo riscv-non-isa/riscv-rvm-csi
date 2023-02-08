@@ -4,6 +4,8 @@ c-documentation-title: RVM-CSI API
 boilerplate: >
   Copyright (c) RISC-V International 2022.
   Creative Commons License
+adoc-optimization: html
+top-heading-level: 0
 notes:
   - This is an example YAML used to demonstrate validation against the schema, rvm-csi.schema.json.
   - It does not reflect the real API specification, but the real specification will have similar form.

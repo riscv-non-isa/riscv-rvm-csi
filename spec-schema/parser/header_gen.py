@@ -195,7 +195,7 @@ def generate_c(api_definition, out_dir):
         if 'notes' in module.keys():
             for note in module['notes']:
                 out_str += format_c_comment_lines(note)
-            out_str += "*\n "
+                out_str += "*\n "
         
         out_str += format_c_comment_lines(api_definition['boilerplate'])
 

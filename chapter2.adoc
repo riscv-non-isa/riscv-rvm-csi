@@ -65,15 +65,11 @@ in csi_bsp_defs.h or in the same header as the associated initialisation functio
 
 ==== CSRs (Control and Status Registers)
 
-Standard RISC-V CSRs are defined in https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h.
-However this is an internal file forming part of the Spike simulator; and such files cannot be treated as forming a
-public API; they are likely subject to backwards-incompatible changes.
-
-Instead, the true "Source of Truth" for this information should be considered to be the RISC-V SAIL model.
-csi_csrs.h, forming part of the API, is auto-generated from the SAIL model (a version of which forms a submodule
-of the RVM-CSI specification repo).  This header file lists all standard CSR indeces and bit masks / shifts.
-In this file, CSR indeces are prefixed CSR_.  Bit shifts for fields within CSRs are prefixed CSR_SHIFT_, and
-masks for bitfields are prefixed CSR_MASK_.
+csi_csrs.h lists indeces and bitfield information for all the standard RISC-V CSRs.  This file will be
+auto-generated from the repo https://github.com/riscv/riscv-opcodes, which acts as a Single Source of Truth
+for this information.  Accordingly, the contents will align with 
+https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h (which forms part of the
+spike simulator).
 
 In addition, csi_bsp_csrs.h should enumerate all custom CSR names, addresses and bit-fields in a similar way.
 Custom CSR indeces are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and

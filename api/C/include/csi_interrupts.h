@@ -12,8 +12,16 @@
  *
  * There will be at most one instance of the trap handling and interrupt subsystem
  * per hart.
+ *
  * The base trap handler will attempt to inform users of unhandled exceptions via
  * the RVM-CSI console API.  Other unhandled interrupts will be ignored.
+ *
+ * BSP implementations of the functions within this module should be thread-safe.
+ * The use of separate context spaces for each hart protects against multiple cores
+ * simultaneously running a function. To ensure that the code is reentrant in
+ * systems with multiple software-scheduled threads, the implementation should turn
+ * off interrupts temporarily, to prevent re-scheduling, while accessing data
+ * within the context space, as required.
  *
  * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
  * generated file: DO NOT EDIT
