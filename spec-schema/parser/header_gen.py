@@ -1,4 +1,5 @@
 import textwrap, pathlib
+from parser_common import format_c_function_prototype, format_c_function_typedef, indent, format_c_enum_typedef
 
 def format_c_comment_lines(input_string):
     ''' Takes a string as input. 
@@ -57,9 +58,6 @@ def format_c_type_prefix_list(prefix_list):
     return out_str
     
 def format_c_type_declaration(declaration):
-    def indent():
-        return "    "   # indent 4 spaces 
-    
     out_str = ""
     if 'description' in declaration.keys():
         out_str += "/*\n "
@@ -79,16 +77,7 @@ def format_c_type_declaration(declaration):
         out_str += "typedef unsigned int " + declaration['name'] + ";\n"
         
     elif c_type == "enum":
-        out_str += "typedef enum {\n"
-        for member in declaration['enum-members']:
-            out_str += indent() + member['name'] 
-            if 'value' in member.keys():
-                out_str += " = " + str(member['value'])
-            out_str += "," # trailing comma should be valid for modern compilers
-            if 'description' in member.keys():
-                out_str += " /* " + member['description'] + " */"
-            out_str += "\n"
-        out_str += "} " + declaration['name'] + ";\n"
+        out_str += format_c_enum_typedef(declaration, True)
 
     elif c_type == "struct":
         out_str += "typedef struct {\n"
@@ -102,22 +91,7 @@ def format_c_type_declaration(declaration):
         out_str += "} " + declaration['name'] + ";\n"
     
     elif c_type == "function":
-        retval = "void"
-        params = "void"
-        if 'func-typedef-retval' in declaration.keys():
-            retval = declaration['func-typedef-retval']
-        if 'func-typedef-params' in declaration.keys():
-            params = ''
-            for param in declaration['func-typedef-params']:
-                param_type = param['type']
-                param_name = param['name']
-                if param_type[-1] == '*':
-                    # pointer types - present with spacing as "int *a" 
-                    param_type = param_type.rstrip('* ')
-                    param_name = "*" + param_name                          
-                params += param_type + " " + param_name + ", "
-            params = params.rstrip(", ") # Get rid of last comma/space
-        out_str += "typedef " + retval + " (" + declaration['name'] + ")(" + params + ");\n"
+        out_str += format_c_function_typedef(declaration)
 
     else:
         raise('undefined C type definition')   # Should not be possible to reach here            
@@ -146,31 +120,11 @@ def format_c_function(function):
 
     # Close comment
     out_str += "*/\n"
-    
-    return_type = "void" 
-    if 'c-return-value' in function.keys():
-        return_type = function['c-return-value']['type']
-    
-    out_str += return_type + " " + function['name'] + "("
-    if 'c-params' in function.keys():
-        for param in function['c-params']:
-            
-            param_type = param['type']
-            param_name = param['name']
-            if param_type[-1] == '*':
-                # pointer types - present with spacing as "int *a" 
-                param_type = param_type.rstrip('* ')
-                param_name = "*" + param_name
-                                                                    
-            out_str += param_type + " " + param_name + ", "
-        
-        out_str = out_str.rstrip(", ") # Get rid of last comma/space
-        
-    else:
-        out_str += "void"       
-    
-    out_str +=");\n"
-    return out_str     
+
+    # Write out the function prototype
+    out_str += format_c_function_prototype(function)
+
+    return out_str
 
 def generate_c(api_definition, out_dir):
     ''' Top level function which iterates through each of the modules in the api definition 

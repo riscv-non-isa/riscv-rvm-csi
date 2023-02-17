@@ -21,14 +21,19 @@ modules:
       enum-members:
       - name: CSI_SUCCESS
         value: 0
+        description: Operation completed successfully
       - name: CSI_NOT_IMPLEMENTED
         value: -1
+        description: Functionality not implemented
       - name: CSI_ERROR
         value: -2
+        description: Generic error code
       - name: CSI_NOT_INITIALIZED
         value: -3
+        description: Sub-system not correctly initialised, operation failed.
       - name: CSI_OUT_OF_MEM
         value: -4
+        description: Out-of-memory error
     - name: csi_trap_source_t
       description: >
         Enumerates all sources in the system that can give rise to a trap event.  This enumeration should
@@ -44,21 +49,37 @@ modules:
       enum-members:
       - name: CSI_ENUM_NMI
         value: 0
+        description: Non-maskable exception (hardware error)
       - name: CSI_ENUM_MACHINE_SW_INTERRUPT
+        description: Machine mode software interrupt
       - name: CSI_ENUM_MACHINE_TIMER_INTERRUPT
+        description: Machine mode timer interrupt
       - name: CSI_ENUM_INSTRUCTION_ADDR_MISALIGNED_EXCEPTION
+        description: Instruction misaligned exception
       - name: CSI_ENUM_INSTRUCTION_ACCESS_FAULT_EXCEPTION
+        description: Instruction access fault exception
       - name: CSI_ENUM_ILLEGAL_INSTRUCTION_EXCEPTION
+        description: Illegal instruction exception
       - name: CSI_ENUM_BREAKPOINT_EXCEPTION
+        description: Breakpoint exception
       - name: CSI_ENUM_LOAD_ADDR_MISALIGNED_EXCEPTION
+        description: Load address misaligned exception
       - name: CSI_ENUM_LOAD_ACCESS_FAULT_EXCEPTION
+        description: Load access fault exception
       - name: CSI_ENUM_STORE_ADDR_MISALIGNED_EXCEPTION
+        description: Store address misaligned exception
       - name: CSI_ENUM_STORE_ACCESS_FAULT_EXCEPTION
+        description: Store access fault exception
       - name: CSI_ENUM_ECALL_FROM_UMODE
+        description: ECALL from User mode
       - name: CSI_ENUM_ECALL_FROM_MMODE
+        description: ECALL from Machine mode
       - name: CSI_ENUM_INST_PAGE_FAULT
+        description: Instruction page-fault
       - name: CSI_ENUM_LOAD_PAGE_FAULT
+        description: Load page-fault
       - name: CSI_ENUM_STORE_PAGE_FAULT
+        description: Store page-fault
       - name: CSI_NUM_STANDARD_TRAP_SOURCES
         description: Must come last in this list
     - name: csi_interrupt_enables_t
@@ -67,10 +88,13 @@ modules:
       enum-members:
       - name: CSI_SW_INTERRUPTS_ENABLE
         value: 8
+        description: Software interrupts enable bit index
       - name: CSI_TIMER_INTERRUPTS_ENABLE
         value: 128
+        description: Timer interrupts enable bit index
       - name: CSI_EXT_INTERRUPTS_ENABLE
         value: 2048
+        description: External interrupts enable bit index
   - name: Trap Handling / Interrupt and Timer Support
     description: >
       This module provides functionality for routing interrupts and registering handlers for traps,

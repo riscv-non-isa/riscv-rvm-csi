@@ -1,4 +1,5 @@
 import pathlib
+from parser_common import format_c_function_prototype, format_c_function_typedef, format_c_enum_typedef
 
 def heading_marker(level):
     '''Add a heading marker at given level relative to the top level as defined by the
@@ -30,16 +31,28 @@ def format_adoc_type_declaration(declaration):
     out_str += declaration['description'] + "\n\n" 
             
     if c_type == "enum":
+        out_str += '''
+[source, c]
+----
+'''
+        out_str += format_c_enum_typedef(declaration, False)
+        out_str += "----\n\n"
+
         out_str += heading_marker(4) + "Values\n"
-        
+        out_str += '''
+[cols="6,6",options="header"]
+|===
+|Value|Description
+'''
         for member in declaration['enum-members']:
-            out_str += "*" + member['name'] + "*"
-            if 'value' in member.keys():
-                out_str += " = " + str(member['value'])
-            out_str += "\n"
+            out_str += '|' + member['name'] +'|'
             if 'description' in member.keys():
                 out_str += member['description'] + "\n"
-            out_str += "\n"
+            else:
+                out_str += "\n"
+        out_str += '''
+|===
+'''
 
     if c_type == "struct":
         out_str += heading_marker(4) + "Members\n"
@@ -51,7 +64,13 @@ def format_adoc_type_declaration(declaration):
                 delimiter = ""
             out_str += member_type + delimiter + member['name'] + "\n\n"
 
-    if c_type == "function":    
+    if c_type == "function":
+        out_str += '''
+[source, c]
+----
+'''
+        out_str += format_c_function_typedef(declaration)
+        out_str += "----\n\n"
         out_str += heading_marker(4) + "Parameters\n"
         if 'func-typedef-params' in declaration.keys():
             for param in declaration['func-typedef-params']:
@@ -85,6 +104,14 @@ def format_adoc_function(function, module_type_list):
             return type
         
     out_str = heading_marker(3) + function['name'] + "\n"
+
+    out_str += '''
+[source, c]
+----
+'''
+    out_str += format_c_function_prototype(function)
+    out_str += "----\n\n"
+
     out_str += function['description'] + "\n\n"
         
     out_str += heading_marker(4) + "Return\n"
