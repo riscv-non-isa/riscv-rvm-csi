@@ -65,14 +65,14 @@ in csi_bsp_defs.h or in the same header as the associated initialisation functio
 
 ==== CSRs (Control and Status Registers)
 
-csi_csrs.h lists indeces and bitfield information for all the standard RISC-V CSRs.  This file will be
+csi_csrs.h lists indices and bitfield information for all the standard RISC-V CSRs.  This file will be
 auto-generated from the repo https://github.com/riscv/riscv-opcodes, which acts as a Single Source of Truth
 for this information.  Accordingly, the contents will align with 
 https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h (which forms part of the
 spike simulator).
 
 In addition, csi_bsp_csrs.h should enumerate all custom CSR names, addresses and bit-fields in a similar way.
-Custom CSR indeces are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and
+Custom CSR indices are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and
 masks for bitfields within custom CSRs are prefixed CCSR_MASK_.
 
 ==== Peripheral Registers
@@ -97,10 +97,14 @@ csi_bsp_interrupts.h should also define the following macros and types:
 [cols="3,2,6",options="header"]
 |===
 |Definition|Type|Purpose
-|CSI_MAX_INTERRUPT_PRIORITY|Macro|Number of of non-zero interrupt priorities available
-|CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES|Macro|Miniumum size of M-mode context space for interrupt sub-system
-|csi_timeout_t|struct|Context structure associated with a timeout
+|CSI_MAX_INTERRUPT_PRIORITY|Macro|Number of of non-zero interrupt priorities available.
+|CSI_MAX_INTERRUPT_LEVEL|Macro|Number of non-zero interrupt levels available, or 0 if interrupt levels are not supported.
+|CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES|Macro|Minimum size of M-mode context space for interrupt sub-system.
+|csi_timeout_t|struct|Context structure associated with a timeout.
 |===
+
+(Note: interrupt priorities determine the order in which simultaneous interrupts at a given privilege level are handled,
+while interrupt levels determine which interrupts can preempt others, if supported: see interrupts module for details).
 
 === Global Definitions Set By Application Writers
 

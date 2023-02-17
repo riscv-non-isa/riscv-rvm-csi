@@ -33,7 +33,8 @@ typedef enum {
  * total number of sources defined.  User applications may then use values above
  * this to enumerate user-defined software signals.  Note that the actual
  * enumerated values have no meaning beyond serving to uniquely identify the source
- * of a trap event.
+ * of a trap event.  They are not intended to map onto values in the mcause
+ * register.
  */
 typedef enum {
     CSI_ENUM_NMI = 0,
