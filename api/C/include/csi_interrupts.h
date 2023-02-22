@@ -386,10 +386,11 @@ int csi_get_irq_priority_thresh(void *mctx);
 void csi_force_ext_irq(void *mctx, int signal);
 
 /*
- * Set interrupt level for a source, if supported.  Higher-level interrupts will
- * preempt lower-level interrupts at the same privilege level.  Levels range from 0
- * to CSI_MAX_INTERRUPT_LEVEL, where level 0 represents regular execution outside
- * of an interrupt handler. Must be run in machine mode.
+ * Set interrupt level for a source.  If preemption has been enabled using
+ * csi_set_preemption, then  higher-level interrupts will preempt lower-level
+ * interrupts at the same privilege level (if supported by the hardware).  Levels
+ * range from 0 to CSI_MAX_INTERRUPT_LEVEL, where level 0 represents regular
+ * execution outside of an interrupt handler. Must be run in machine mode.
  *
  * @param mctx: M-mode context pointer previously initialised by
  * csi_interrupts_init.
@@ -419,6 +420,8 @@ int csi_get_interrupt_level(void *mctx, int signal);
  * called to temporarily raise the level during a piece of critical code, thereby
  * preventing preemption by interrupts with a certain range of levels; while the
  * "correct" interrupt level can be restored by setting level threshold to 0.
+ * Note: preemption must be enabled using csi_set_preemption for this to take
+ * effect.
  *
  * @param mctx: M-mode context pointer previously initialised by
  * csi_interrupts_init.
@@ -461,9 +464,9 @@ csi_status_t csi_register_raw_interrupt_handler(void *mctx, unsigned mcause, voi
 
 /*
  * This function may optionally be run by users who want to supply their own fast
- * exception handling function to be inserted directly into the mtvec register
- * (thereby bypassing the RVM-CSI base trap handler in handling exceptions).  It
- * must be run in machine mode.  Note that in this case the user's function must
+ * exception handling function to be inserted directly into the base of the vector
+ * table (thereby bypassing the RVM-CSI base trap handler in handling exceptions).
+ * It must be run in machine mode.  Note that in this case the user's function must
  * deal with save and restore of register context (whereas this is not necessary
  * for handlers registered using csi_register_m_isr).
  *
@@ -477,6 +480,21 @@ csi_status_t csi_register_raw_interrupt_handler(void *mctx, unsigned mcause, voi
  * returned as appropriate if the request is invalid.
  */
 csi_status_t csi_register_raw_exception_handler(void *mctx, void *handler);
+
+/*
+ * When any trap is first taken, the mie bit within mstatus reverts to 0, thereby
+ * disabling interrupts until it is set to 1.  By default, the base trap handler
+ * leaves this bit at 0 until just before interrupt handling completes, thereby
+ * preventing preemption.   This function may optionally be run to modify this
+ * behaviour and thus allow preemption. This function must be run in machine mode.
+ *
+ * @param mctx: M-mode context pointer previously initialised by
+ * csi_interrupts_init.
+ * @param preemption_enabled: Set true to enable preemption, false to disable.
+ * @return : Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be
+ * returned as appropriate if the request is invalid.
+ */
+csi_status_t csi_set_preemption(void *mctx, bool preemption_enabled);
 
 /*
  * Set the frequency of the system timer.  Note that there is typically a single
@@ -528,9 +546,13 @@ csi_status_t csi_set_timer_tick(void *mctx, unsigned tick_period_us);
  * @param callback_context: Pointer to the user's context space, which will be
  * passed into the callback function.
  * @param timeout_ticks: Timeout period in ticks (configured by csi_set_timer_tick)
+ * @param priority: Priority for this timeout, used to determine the callback to be
+ * called if two callbacks fall due on the same timer tick.  Higher numbers
+ * indicate higher priority.  A single priority scheme is shared between M-mode and
+ * U-mode callbacks.
  * @return : Status of operation.
  */
-csi_status_t csi_set_m_timeout(void *mctx, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks);
+csi_status_t csi_set_m_timeout(void *mctx, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks, int priority);
 
 /*
  * Registers a callback function (callback) which will be called after a period set
@@ -550,9 +572,13 @@ csi_status_t csi_set_m_timeout(void *mctx, csi_timeout_t *timeout_handle, csi_ti
  * @param callback_context: Pointer to the user's context space, which will be
  * passed into the callback function.
  * @param timeout_ticks: Timeout period in ticks (configured by csi_set_timer_tick)
+ * @param priority: Priority for this timeout, used to determine the callback to be
+ * called if two callbacks fall due on the same timer tick.  Higher numbers
+ * indicate higher priority.  A single priority scheme is shared between M-mode and
+ * U-mode callbacks.
  * @return : Status of operation.
  */
-csi_status_t csi_set_u_timeout(unsigned irq_system_handle, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks);
+csi_status_t csi_set_u_timeout(unsigned irq_system_handle, csi_timeout_t *timeout_handle, csi_timeout_callback_t *callback, void *callback_context, int timeout_ticks, int priority);
 
 /*
  * Cancels a timeout previously configured with csi_set_timeout, using the

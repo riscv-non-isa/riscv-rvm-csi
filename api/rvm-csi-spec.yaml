@@ -558,8 +558,9 @@ modules:
         type: int
     - name: csi_set_interrupt_level
       description: >
-        Set interrupt level for a source, if supported.  Higher-level interrupts will preempt lower-level
-        interrupts at the same privilege level.  Levels range from 0 to CSI_MAX_INTERRUPT_LEVEL, where level 0
+        Set interrupt level for a source.  If preemption has been enabled using csi_set_preemption, then 
+        higher-level interrupts will preempt lower-level interrupts at the same privilege level (if supported
+        by the hardware).  Levels range from 0 to CSI_MAX_INTERRUPT_LEVEL, where level 0
         represents regular execution outside of an interrupt handler.
         Must be run in machine mode.
       c-params:
@@ -601,7 +602,7 @@ modules:
         threshold, set by this function, and the level associated with the current interrupt.  Therefore this function
         can be called to temporarily raise the level during a piece of critical code, thereby preventing preemption by
         interrupts with a certain range of levels; while the "correct" interrupt level can be restored by setting
-        level threshold to 0.
+        level threshold to 0.  Note: preemption must be enabled using csi_set_preemption for this to take effect.
       c-params:
       - name: mctx
         description: >
@@ -653,7 +654,7 @@ modules:
     - name: csi_register_raw_exception_handler
       description: >
         This function may optionally be run by users who want to supply their own fast exception handling function
-        to be inserted directly into the mtvec register (thereby bypassing the RVM-CSI base trap handler in handling
+        to be inserted directly into the base of the vector table (thereby bypassing the RVM-CSI base trap handler in handling
         exceptions).  It must be run in machine mode.  Note that in this case the user's function must deal with save and restore
         of register context (whereas this is not necessary for handlers registered using csi_register_m_isr).
       c-params:
@@ -667,6 +668,25 @@ modules:
           csi_register_raw_exception_handler will be unregistered and exeptions will go back to being handled
           by the base trap handler in the BSP.
         type: void *
+      c-return-value:
+        description: >
+          Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+        type: csi_status_t
+    - name: csi_set_preemption
+      description: >
+        When any trap is first taken, the mie bit within mstatus reverts to 0, thereby disabling interrupts until it is set
+        to 1.  By default, the base trap handler leaves this bit at 0 until just before interrupt handling completes, thereby
+        preventing preemption.   This function may optionally be run to modify this behaviour and thus allow preemption.
+        This function must be run in machine mode.
+      c-params:
+      - name: mctx
+        description: >
+          M-mode context pointer previously initialised by csi_interrupts_init.
+        type: void *
+      - name: preemption_enabled
+        description: >
+          Set true to enable preemption, false to disable.
+        type: bool
       c-return-value:
         description: >
           Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
@@ -734,6 +754,12 @@ modules:
       - name: timeout_ticks
         description: Timeout period in ticks (configured by csi_set_timer_tick)
         type: int
+      - name: priority
+        description: >
+          Priority for this timeout, used to determine the callback to be called if two callbacks
+          fall due on the same timer tick.  Higher numbers indicate higher priority.  A single priority
+          scheme is shared between M-mode and U-mode callbacks.
+        type: int
       c-return-value:
         description: Status of operation.
         type: csi_status_t
@@ -762,6 +788,12 @@ modules:
         type: void *
       - name: timeout_ticks
         description: Timeout period in ticks (configured by csi_set_timer_tick)
+        type: int
+      - name: priority
+        description: >
+          Priority for this timeout, used to determine the callback to be called if two callbacks
+          fall due on the same timer tick.  Higher numbers indicate higher priority.  A single priority
+          scheme is shared between M-mode and U-mode callbacks.
         type: int
       c-return-value:
         description: Status of operation.
