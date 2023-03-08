@@ -112,6 +112,11 @@ def format_c_function(function):
         
     out_str += format_c_comment_lines(function['description'])
     out_str += "*\n "
+    if 'notes' in function.keys():
+        for note in function['notes']:
+            out_str += format_c_comment_lines(note)
+        out_str += "*\n "
+
     if 'c-params' in function.keys():
         for param in function['c-params']:
             out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])

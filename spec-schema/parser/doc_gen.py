@@ -113,7 +113,10 @@ def format_adoc_function(function, module_type_list):
     out_str += "----\n\n"
 
     out_str += function['description'] + "\n\n"
-        
+    if 'notes' in function.keys():
+        for note in function['notes']:
+            out_str += note + "\n\n"
+    
     out_str += heading_marker(4) + "Return\n"
     
     if 'c-return-value' in function.keys():

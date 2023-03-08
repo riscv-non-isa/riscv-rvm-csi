@@ -442,17 +442,41 @@ csi_status_t csi_set_interrupt_level_thresh(void *mctx, int level_thresh);
 int csi_get_interrupt_level_thresh(void *mctx);
 
 /*
+ * This function may optionally be used to route an interrupt source to the hart.
+ * This is only required if using csi_register_raw_m_interrupt_handler or
+ * csi_register_raw_m_interrupt_handler to register a "raw" handler.  Otherwise,
+ * this routing functionality is performed within csi_register_m_isr or
+ * csi_register_u_isr, and this function should not be run.  If run, it must be run
+ * in M-mode.
+ *
+ * @param mctx: M-mode context pointer previously initialised by
+ * csi_interrupts_init.
+ * @param source: Enumerated interrupt / exception source.  This must be one of the
+ * enumerations from csi_trap_source_t, or a value from the BSP (extending the
+ * enumerations in csi_trap_source_t) enumerating a platform-specific external
+ * interrupt source.
+ */
+void csi_route_interrupt(void *mctx, int source);
+
+/*
  * This function may optionally be run by users who want to supply their own fast
- * interrupt handling function to be inserted directly into the vector table
+ * M-mode interrupt handling function to be inserted directly into the vector table
  * (thereby bypassing the RVM-CSI base trap handler in handling a given mcause).
  * It must be run in machine mode.  Note that in this case the user's function must
  * deal with save and restore of register context (whereas this is not necessary
  * for handlers registered using csi_register_m_isr).
  *
+ * Many systems without CLIC (Core Local Interrrupt Controller) functionality may
+ * chose not to implement this function.  If it is implemented on such systems,
+ * then there may be severe restrictions around its functionality, particularly on
+ * placement of the user's handler in memory.  Some CLINT-based systems may not be
+ * able to implement this functionality due to restrictions on writing to code
+ * memory.  Consult the BSP documentation for details.
+ *
  * @param mctx: M-mode context pointer previously initialised by
  * csi_interrupts_init.
- * @param mcause: mcause register value (LSBs) which will result in a jump into
- * this handler
+ * @param exccode: Exception code (mcause register LSBs) which will result in a
+ * jump into this handler
  * @param handler: Pointer to the user's handler function.  If this is NULL, any
  * function previously registered using csi_register_raw_interrupt_handler will be
  * unregistered and the relevant signals will go back to being handled by the base
@@ -460,7 +484,37 @@ int csi_get_interrupt_level_thresh(void *mctx);
  * @return : Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be
  * returned as appropriate if the request is invalid.
  */
-csi_status_t csi_register_raw_interrupt_handler(void *mctx, unsigned mcause, void *handler);
+csi_status_t csi_register_raw_m_interrupt_handler(void *mctx, unsigned exccode, void *handler);
+
+/*
+ * This function may optionally be run by users who want to supply their own fast
+ * U-mode interrupt handling function to be inserted directly into the vector table
+ * (thereby bypassing the RVM-CSI base trap handler in handling a given mcause).
+ * It must be run in user mode.  Note that in this case the user's function must
+ * deal with save and restore of register context (whereas this is not necessary
+ * for handlers registered using csi_register_m_isr).
+ *
+ * It will not normally be possible to support this functionality on systems
+ * without CLIC (Core Local Interrrupt Controller) functionality, since delegation
+ * of interrupts directly to U-mode has been removed (for CLINT mode) from later
+ * editions of the RISC-V ISA.  If it is implemented on such systems, then there
+ * may be severe restrictions around its functionality, particularly on placement
+ * of the user's handler in memory.  Some CLINT-based systems may not be able to
+ * implement this functionality due to restrictions on writing to code memory.
+ * Consult the BSP documentation for details.
+ *
+ * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
+ * obtained by running get_interrupts_u_handle
+ * @param exccode: Exception code (mcause register LSBs) which will result in a
+ * jump into this handler
+ * @param handler: Pointer to the user's handler function.  If this is NULL, any
+ * function previously registered using csi_register_raw_interrupt_handler will be
+ * unregistered and the relevant signals will go back to being handled by the base
+ * trap handler in the BSP.
+ * @return : Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be
+ * returned as appropriate if the request is invalid.
+ */
+csi_status_t csi_register_raw_u_interrupt_handler(unsigned irq_system_handle, unsigned exccode, void *handler);
 
 /*
  * This function may optionally be run by users who want to supply their own fast
