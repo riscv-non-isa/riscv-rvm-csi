@@ -4,16 +4,19 @@
 RVM-CSI (Risc-V eMbedded - Common Software Interface) has been defined with the aim of facilitating the portability
 of source code across different embedded platforms.
 
-RVM refers to a class of _platforms_ and _profiles_ which RISC-V International intends to define.  A _profile_ defines a
+RVM refers to a class of _platforms_ and _profiles_ which RISC-V International originally intended to define.  A _profile_ defines a
 specific base ISA, plus ISA extensions and any options applicable within those ISA extensions.  A _platform_ comprises
 a profile plus further specifications for non-ISA features (such as interrupt controllers etc.).
 
-Although no RVM platform or profile has yet been specified at time of writing, the initial specification of RVM-CSI
-will have no dependency on certain features being present in the platform (beyond the base ISA).  Any run-time
-functionality that depends on certain hardware characteristics can either a) report the absence of the required
-functionality and hence be non-functional, or b) emulate the required functionality in software.
+The motivation behind defining these profiles and platforms is to constrain the features of a RISC-V platform in order to
+make it easier to write software that is portable between platforms.  This is most important in the application
+processor space, where binary distributions need to be created that will work on platforms from multiple vendors.
+Hence most focus in this area has been on the RVA (application processor) platforms.
 
-Therefore, a single Common Software Interface should serve to cover all defined RVM platforms going forward.
+In the embedded space, there is no longer an intention, at least in the near future at time of writing, to define the
+RVM platforms and profiles.  Rather, since we assume that software will be built for a specific embedded platform, we
+can deal with the problem of software portability by creating a software layer that abstracts the features of the platform.
+Hence the motivation behind RVM-CSI.
 
 In constructing systems for RVM platforms, we assume the following:
 
@@ -30,6 +33,10 @@ Most importantly, RVM-CSI Specifies:
 _Board Support Packs_ (BSPs) conforming to this API, and application writers can write their code against the interface
 in order to create portable code.
 * The format of Board Support Packs.
+
+The API aims to have no dependency on certain features being present in the platform (beyond the base ISA).  Any run-time
+functionality that depends on certain hardware characteristics can either a) report the absence of the required
+functionality and hence be non-functional, or b) emulate the required functionality in software.
 
 While the first version of the specification deals with a C language API, future enhancements may encompass other
 languages.  Implementations in different languages will share common function names and descriptions wherever possible.

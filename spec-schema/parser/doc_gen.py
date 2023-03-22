@@ -18,6 +18,12 @@ def format_text_from_array(input_array):
         out_str += "\n"
     return out_str
 
+def preprocess_links(text, linked_sections):
+    '''Searches text for matches within linked_sections, and replaces with links'''
+    for s in linked_sections:
+        text = text.replace(s, '<<' + s + ', ' + s + '>>')
+    return text
+
 def format_adoc_type_declaration(declaration):
     ''' Builds adoc level 3 & 4 section for supplied type declaration.
         Returns this as a string.
@@ -26,7 +32,7 @@ def format_adoc_type_declaration(declaration):
     # values can be "struct", "enum", "int", "unsigned"
     c_type = declaration['type'] 
     
-    out_str = "[#type_" + declaration['name'] + "]\n"
+    out_str = "[#" + declaration['name'] + "]\n"
     out_str += heading_marker(3) + c_type + " *" + declaration['name'] + "*\n"
     out_str += declaration['description'] + "\n\n" 
             
@@ -89,21 +95,14 @@ def format_adoc_type_declaration(declaration):
 
     return out_str
 
-def format_adoc_function(function, module_type_list):
+def format_adoc_function(function, linked_sections):
     ''' Builds adoc level 3 & 4 section for supplied function declaration.
         Second parameter is a list of types declared within this module which
         is used to create cross-references.
         Returns function adoc string.
     '''
-    
-    def format_param_type(type,types_defined_by_module):
-        ''' If parameter type is defined within module then render this as a cross-reference'''
-        if type in types_defined_by_module:
-            return "<<type_" + type + ",`" + type + "`>>" # Adoc cross-reference to type
-        else:
-            return type
         
-    out_str = heading_marker(3) + function['name'] + "\n"
+    out_str = heading_marker(3) + function['name'] + '[[' + function['name'] + ']]' "\n"
 
     out_str += '''
 [source, c]
@@ -112,15 +111,16 @@ def format_adoc_function(function, module_type_list):
     out_str += format_c_function_prototype(function)
     out_str += "----\n\n"
 
-    out_str += function['description'] + "\n\n"
+    out_str += preprocess_links(function['description'], linked_sections) + "\n\n"
     if 'notes' in function.keys():
         for note in function['notes']:
-            out_str += note + "\n\n"
+            out_str += preprocess_links(note, linked_sections) + "\n\n"
     
     out_str += heading_marker(4) + "Return\n"
     
     if 'c-return-value' in function.keys():
-        out_str += "`" + function['c-return-value']['type'] + "` - " + function['c-return-value']['description'] + "\n\n"
+        out_str += "`" + function['c-return-value']['type'] + "` - " + \
+                preprocess_links(function['c-return-value']['description'], linked_sections) + "\n\n"
     
     out_str += heading_marker(4) + "Parameters\n"
     
@@ -133,7 +133,8 @@ def format_adoc_function(function, module_type_list):
                 param_type = param_type.rstrip('* ')
                 param_name = "*" + param_name
                                         
-            out_str += format_param_type(param_type, module_type_list) + " `" + param_name + "` - " + param['description'] + "\n\n"
+            out_str += preprocess_links(param_type, linked_sections) + " `" + param_name + "` - " + \
+                    preprocess_links(param['description'],linked_sections) + "\n\n"
             
             if 'notes' in param.keys():
                 out_str += format_text_from_array(param['notes'])
@@ -144,7 +145,7 @@ def format_adoc_function(function, module_type_list):
     
     return out_str   
 
-def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization):
+def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, linked_sections):
     ''' Builds adoc file for a module.
         Inputs are the module definition and the output directory & sub directory for the
         adoc file.
@@ -159,35 +160,33 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization):
     out_str += heading_marker(1) + module['c-filename'] + " - " + module['name'] + "\n"
     out_str += ":toc:\n"
     
-    out_str += module['description'] + "\n\n"
+    out_str += preprocess_links(module['description'], linked_sections) + "\n\n"
     
     if 'notes' in module.keys() or 'c-specific-notes' in module.keys():
         out_str += heading_marker(2) + "Notes\n"
     
     if 'notes' in module.keys():
         for note in module['notes']:
-            out_str += note
+            out_str += preprocess_links(note, linked_sections)
             out_str += "\n\n"
     
     if 'c-specific-notes' in module.keys():
-        out_str += format_text_from_array(module['c-specific-notes'])
+        out_str += preprocess_links(format_text_from_array(module['c-specific-notes']), linked_sections)
         out_str += "\n"
     
     # Add type declarations
-    types_provided_by_module = [] # used to create link between function params and types, if possible
     if 'c-type-declarations' in module.keys():
         out_str += heading_marker(2) + "Types\n"
         for type_declaration in module['c-type-declarations']:
             out_str += format_adoc_type_declaration(type_declaration)
             out_str += "\n"
-            types_provided_by_module.append(type_declaration['name'])
         out_str += "\n"
     
     # Add function declarations
     if 'functions' in module.keys():
         out_str += heading_marker(2) + "Functions\n"
         for function in module['functions']:
-            out_str += format_adoc_function(function, types_provided_by_module)
+            out_str += format_adoc_function(function, linked_sections)
             out_str += "\n"
         out_str += "\n"
     
@@ -224,6 +223,18 @@ def generate_c_adoc(api_definition, out_dir):
     global top_heading_level
     top_heading_level = api_definition['top-heading-level']
 
+    # Get a set of function and macro names, we will create links where these are
+    # referred to.
+    linked_sections = []
+    for module in api_definition['modules']:
+        if 'functions' in module.keys():
+            for function in module['functions']:
+                linked_sections.append(function['name'])
+        if 'c-type-declarations' in module.keys():
+            for dec in module['c-type-declarations']:
+                linked_sections.append(dec['name'])
+
+    # Create document as a string
     out_str = "[#title]\n"
     out_str += heading_marker(1) + api_definition['c-documentation-title'] + "\n"
     
@@ -240,7 +251,7 @@ def generate_c_adoc(api_definition, out_dir):
     for module in api_definition['modules']:
         # Generate docs for module - this will be a new file
         # Returns [c filename, module name, adoc filename]
-        module_links = generate_c_module_adoc(module, out_dir, module_sub_dir, api_definition['adoc-optimization'])
+        module_links = generate_c_module_adoc(module, out_dir, module_sub_dir, api_definition['adoc-optimization'], linked_sections)
     
         # Add link to a table of contents
         module_file_wth_path = pathlib.Path(module_sub_dir, module_links[2])

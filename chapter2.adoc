@@ -31,7 +31,7 @@ This header is part of the API definition, and includes several further header f
 |===
 |Header|Supplied by|Contents
 |csi_defs.h|API|Definitions which may be used by the BSP-supplied headers (such as return codes etc.)
-|csi_csrs.h|API|Standard CSR definitions, auto-generated from the RISC-V SAIL model
+|csi_csrs.h|API|Standard CSR definitions (auto-generated according to the RISC-V spec)
 |csi_bsp_csrs.h|BSP|Custom CSR definitions
 |csi_bsp_perip.h|BSP|Peripheral register definitions
 |csi_bsp_interrupts.h|BSP|Enumeration of interrupt sources in the system
