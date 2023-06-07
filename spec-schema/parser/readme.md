@@ -15,13 +15,13 @@ A Python application which will parse a YAML RVM-CSI API definition file, valida
 
 Build a set of C header files, placing them in the default directory `./output`
 
-`python3 parser.py ./test_data/simple.rvm-csi.yaml`
+`python3 csi_parser.py ./test_data/simple.rvm-csi.yaml`
 
 ### AsciiDoc file generation
 
 Build AsciiDoc documentation, placing the files in default directory `./adoc_output`.
 
-`python3 parser.py --generate-docs ./test_data/simple.rvm-csi.yaml`
+`python3 csi_parser.py --generate-docs ./test_data/simple.rvm-csi.yaml`
 
 The top level is `index.adoc` which links to module specific files in a `/modules` subfolder
 
@@ -31,7 +31,7 @@ The .adoc files can be transformed to HTML using [Asciidoctor](https://asciidoct
 
 ### Further help
 
-`python parser.py --help` will display the application help files 
+`python csi_parser.py --help` will display the application help files 
 
 ## Testing
 

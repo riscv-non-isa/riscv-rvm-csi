@@ -8,8 +8,8 @@ all: build
 
 build:
 	@echo "Auto-generating docs and code from YAML"
-	python3 spec-schema/parser/parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)
-	python3 spec-schema/parser/parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)
+	python3 spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)
+	python3 spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)
 
 	@echo "Building PDF from asciidoc"
 	asciidoctor-pdf \

@@ -210,7 +210,7 @@ module_sub_dir = "modules"
 
 top_heading_level = 0 #default
 
-def generate_c_adoc(api_definition, out_dir):
+def generate_c_adoc(api_definition, module_definitions, out_dir):
     ''' Top level function which builds a top level index adoc file then 
         iterates through modules defined in the api definition to build module
         documentation.
@@ -226,7 +226,8 @@ def generate_c_adoc(api_definition, out_dir):
     # Get a set of function and macro names, we will create links where these are
     # referred to.
     linked_sections = []
-    for module in api_definition['modules']:
+    for m in module_definitions:
+        module = m['module']
         if 'functions' in module.keys():
             for function in module['functions']:
                 linked_sections.append(function['name'])
@@ -248,7 +249,8 @@ def generate_c_adoc(api_definition, out_dir):
     
     out_str += heading_marker(2) + "Modules\n"
     
-    for module in api_definition['modules']:
+    for m in module_definitions:
+        module = m['module']
         # Generate docs for module - this will be a new file
         # Returns [c filename, module name, adoc filename]
         module_links = generate_c_module_adoc(module, out_dir, module_sub_dir, api_definition['adoc-optimization'], linked_sections)

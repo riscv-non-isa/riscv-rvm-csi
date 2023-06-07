@@ -22,15 +22,12 @@ To support the latter case, pre-processor directives that are intended to change
 All API functions shall be implemented in a way that supports simultaneous calls from multiple cores or software threads.
 This is supported through the use of an initialisation function which allocates a separate context space for each instance.
 
-=== Header File Structure
-
-Application writers will include a single header file, *rvm_csi.h*, in their code where they wish to include RVM-CSI functionality.
-This header is part of the API definition, and includes several further header files as follows:
+=== Header Files
 
 [cols="2,1,5",options="header"]
 |===
 |Header|Supplied by|Contents
-|csi_defs.h|API|Definitions which may be used by the BSP-supplied headers (such as return codes etc.)
+|csi_defs.h|API|Definitions of generic low-level functionality; including general-purpose definitions such as return codes.
 |csi_csrs.h|API|Standard CSR definitions (auto-generated according to the RISC-V spec)
 |csi_bsp_csrs.h|BSP|Custom CSR definitions
 |csi_bsp_perip.h|BSP|Peripheral register definitions

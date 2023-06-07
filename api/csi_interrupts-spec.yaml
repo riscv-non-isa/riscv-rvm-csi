@@ -1,0 +1,780 @@
+module:
+  name: Trap Handling / Interrupt and Timer Support
+  description: >
+    This module provides functionality for routing interrupts and registering handlers for traps,
+    controlling the system timer, and managing timed events.
+    The BSP provides base trap handler functionality, which is installed when the initialization function
+    csi_interrupts_init is called.  This base trap handling code provides save and restore of register context,
+    performs default exception handling, and calls any handlers registered by the user.
+    Systems using RVM-CSI may provide their own trap handling
+    support, in which case csi_interrupts_init should not be called, and all functions in this module
+    will be inoperative.
+  notes:
+    - There will be at most one instance of the trap handling and interrupt subsystem per hart.
+    - >
+      The base trap handler will attempt to inform users of unhandled exceptions via the RVM-CSI console
+      API.  Other unhandled interrupts will be ignored.
+    - >
+      The base trap handler will deal with saving and restoring all registers which would normally be used
+      by compiled C code without the use of special compiler intrinsics (the exact register set is platform-dependent
+      and may be documented by the BSP). Other registers manipulated by the user's handler (such as
+      platform-specific CSRs etc.) should be saved and restored by that handler.
+    - >
+      It is the responsibility of the user's handler to clear down the source of any interrupt that it is
+      handling, prior to returning.
+    - >
+      BSP implementations of the functions within this module should be thread-safe.  The use of separate
+      context spaces for each hart protects against multiple cores simultaneously running a function.
+      To ensure that the code is reentrant in systems with multiple software-scheduled threads, the
+      implementation should turn off interrupts temporarily, to prevent re-scheduling, while accessing
+      data within the context space, as required.
+    - >
+      BSPs should use vectored interrupts where possible; although to save memory, handlers
+      for many different mcause values may share code.
+  c-specific: false
+  c-filename: csi_interrupts.h
+  c-include-files:
+  - filename: csi_defs.h
+    system-header: false
+  - filename: csi_bsp_interrupts.h
+    system-header: false
+  c-type-declarations:
+  - name: csi_isr_t
+    description: Function prototype for the user's trap handler (M-mode or U-mode)
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: source
+      description: >
+        Enumerated interrupt source for which the handler was registered.
+      type: int
+    - name: isr_ctx
+      description: User's context pointer as supplied when the handler was registered.
+      type: void *
+    - name: mtval
+      description: Contents of the mtval register associated with this trap.
+      type: unsigned
+  - name: csi_timeout_callback_t
+    description: Function prototype for the user's timeout callback function (M-mode or U-mode)
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: timeout_handle
+      description: Handle for this timeout instance, as passed into csi_set_timeout
+      type: csi_timeout_t *
+    - name: callback_context
+      description: >
+        Context pointer that was passed into csi_set_timeout
+      type: void *
+  functions:
+  - name: csi_interrupts_init
+    description: >
+      Initialize interrupt and timer sub-system for this hart.  Must be called before calling any other functions
+      in this module.  This function must run in machine mode.  Following initialization, all interrupt sources
+      (except exceptions and NMI) are disabled.  To enable a source, first register a handler, using
+      csi_register_m_isr or csi_register_u_isr; then enable the source with csi_enable_m_trap_source or
+      csi_enable_u_trap_source.
+    c-params:
+    - name: mctx
+      description: >
+        Pointer to an area of memory to be used as M-mode context space for the interrupt subsystem.  The BSP will
+        define a macro CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES which defines the minimum required size of this context space in
+        bytes.  Calling this function initializes the context space.
+      type: void *
+    - name: mctx_size
+      description: >
+        Size of memory allocated at the mctx pointer in bytes.  Allocating more than CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES may
+        permit additional M-mode handlers to be registered.
+      type: unsigned
+    - name: mstack
+      description: >
+        Pointer to an area of memory to be used as M-mode stack space for the interrupt subsystem.  This parameter may
+        be NULL in which case the stack of the interrupted thread will be used.
+      type: void *
+    - name: mstack_size
+      description: >
+        Size of memory allocated at the mstack pointer in bytes.
+      type: unsigned
+    - name: ustack
+      description: >
+        Pointer to an area of memory to be used as U-mode stack space for the interrupt subsystem.  This parameter may
+        be NULL in which case U-mode handlers will not be supported.
+      type: void *
+    - name: ustack_size
+      description: >
+        Size of memory allocated at the ustack pointer in bytes.
+      type: unsigned
+    c-return-value:
+      description: Status of initialisation operation
+      type: csi_status_t
+  - name: csi_interrupts_uninit
+    description: >
+      Un-initialize the interrupt and timer sub-system.  After calling this function, the memory allocated
+      for the context and stacks may be freed, and no other functions in this module may be called.  This function
+      must run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    c-return-value:
+      description: Status of uninitialisation operation
+      type: csi_status_t
+  - name: get_interrupts_u_handle
+    description: >
+      This function is run from U-mode to obtain a handle that can be used to reference the interrupt sub-system
+      for the current hart.  (This will usually be the address of mctx as passed into csi_interrupts_init, which
+      can be de-referenced by M-mode code but not U-mode).
+    c-return-value:
+      description: IRQ system handle, or 0 if inapplicable.
+      type: unsigned
+  - name: csi_register_m_isr
+    description: >
+      Registers a user-supplied function (isr) that will be called in M-mode by the base trap handler on receipt of a
+      trap arising from from the source signal.  isr_ctx is a parameter that will be passed into the user's ISR
+      along with the signal number and mtval contents.  This function transparently deals with routing the desired signal
+      to the hart and enabling the interrupt.  This function must run in machine mode.  Running this function with a NULL
+      pointer for the isr parameter will un-register a previously registered handler.  NOTE: there can only be one
+      handler registered for any given signal.  Re-running this function to register a second handler for a signal
+      will replace the previous, and is not an error.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: isr
+      description: >
+        Pointer to the user's handler function; or NULL pointer to un-register a handler.
+      type: csi_isr_t *
+    - name: isr_ctx
+      description: >
+        Pointer to the user's context.  This will be passed into the handler function when called.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of ISR registration operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.  CSI_NOT_INITIALIZED will be returned if csi_interrupts_init has not been called prior to calling this
+        function, or if csi_interrupts_uninit was called prior to calling this function.  CSI_OUT_OF_MEM will be
+        returned if the number of handlers registered exceeds that supported by the context size.
+      type: csi_status_t
+  - name: csi_register_u_isr
+    description: >
+      Registers a user-supplied function (isr) that will be called in U-mode by the base trap handler on receipt of a
+      trap arising from from the source signal.  isr_ctx is a parameter that will be passed into the user's ISR
+      along with the signal number and mtval contents.  This function transparently deals with routing the desired signal
+      to the hart and enabling the interrupt.  This function must run in user mode.  Running this function with a NULL
+      pointer for the isr parameter will un-register a previously registered handler.  Note that before registering
+      a user mode handler for a source, csi_set_umode_trap_permissions must have been run (from machine mode) in order
+      to enable handling of the trap in U-mode.  NOTE: there can only be one handler registered for any given signal.
+      Re-running this function to register a second handler for a signal will replace the previous, and is not an error.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: isr
+      description: >
+        Pointer to the user's handler function; or NULL pointer to un-register a handler
+      type: csi_isr_t *
+    - name: isr_ctx
+      description: >
+        Pointer to the user's context.  This will be passed into the handler function when called.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of ISR registration operation.  CSI_ERROR will be returned if the source parameter is
+        invalid, or if the requested source has not been enabled for u-mode handling by first running 
+        csi_set_umode_trap_permissions .  CSI_NOT_INITIALIZED will be returned if csi_interrupts_init has not been
+        called prior to calling this function, or if csi_interrupts_uninit was called prior to calling this
+        function. CSI_OUT_OF_MEM will be returned if the number of handlers registered exceeds that supported by
+        the context size.
+      type: csi_status_t
+  - name: csi_disable_m_trap_source
+    description: >
+      Disable a trap source.  This function must be run in machine mode.  Note that this only gates an interrupting
+      signal within the interrupt control logic.  Device drivers may offer separate controls for turning their
+      interrupts on and off at source.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of disable operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.
+      type: csi_status_t
+  - name: csi_enable_m_trap_source
+    description: >
+      Enable a trap source.  This function must be run in machine mode.  Note that this only gates an interrupting
+      signal within the interrupt control logic.  Device drivers may offer separate controls for turning their
+      interrupts on and off at source.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of enable operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.
+      type: csi_status_t
+  - name: csi_disable_u_trap_source
+    description: >
+      Disable handling of a trap arising from a particular source.  This function must be run in user mode.
+      It will only have an effect if a user-mode handler has previously been registered for the selected source.
+      Note this only disables the running of the handler.  Device drivers may offer separate controls for turning their
+      interrupts on and off at source.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of disable operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.
+      type: csi_status_t
+  - name: csi_enable_u_trap_source
+    description: >
+      Enable handling of a trap arising from a particular source.  This function must be run in user mode.
+      It will only have an effect if a user-mode handler has previously been registered for the selected source.
+      Note this only enables the running of the handler.  Device drivers may offer separate controls for turning their
+      interrupts on and off at source.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    c-return-value:
+      description: >
+        Status of enable operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.
+      type: csi_status_t
+  - name: csi_set_interrupt_enables
+    description: Enable or disable 3 classes of interrupts for this hart.  Must be run in machine mode.
+    c-params:
+    - name: int_enables
+      description: >
+        This word will be written directly to the mie CSR in order to control whether software interrupts,
+        timer interrupts and external interrupts are enabled.  To enable all 3 classes of interrupts,
+        pass a value of CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE | CSI_EXT_INTERRUPTS_ENABLE.  To
+        disable all interrupts, pass a value of 0.
+      type: unsigned
+    c-return-value:
+      description: >
+        Integer in the same format as int_enables, reflecting the previous value of int_enables prior to the
+        change.  This may be stored and passed back into another call to csi_set_interrupt_enables in order
+        to restore the previous interrupt enables state.
+      type: unsigned
+  - name: csi_set_umode_trap_permissions
+    description: >
+      Informs the interrupt subsystem whether a given signal is allowed to be handled in user mode.  This function
+      must be run in machine mode.  Any signals for which this function is not run will not be permitted to be
+      handled in U-mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+    - name: permitted
+      description: >
+        True if user mode is permitted to register a handler for this trap source.  False if not permitted.
+      type: bool
+    c-return-value:
+      description: >
+        Status of permissions setting operation.  CSI_ERROR will be returned if the source parameter is
+        invalid.
+      type: csi_status_t        
+  - name: csi_define_sw_signal
+    description: >
+      Allocates a signal number for software use.  The signal number must be outside the range currently
+      reserved by the BSP, otherwise an error is raised.  When raised, the signal will be routed to the
+      specified hart ID.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.  A unique number >= CSI_TOTAL_BSP_TRAP_SOURCES must be chosen.
+      type: int
+    - name: hartid
+      description: >
+        ID of the hart to which this signal will be routed.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the source parameter is invalid.
+      type: csi_status_t        
+  - name: csi_raise_m_sw_signal
+    description: >
+      Raises a software signal, previously defined using csi_define_sw_signal.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the specified signal is not software-raisable.
+      type: csi_status_t        
+  - name: csi_raise_u_sw_signal
+    description: >
+      Raises a software signal, previously defined using csi_define_sw_signal.  Must be run in user mode.
+      User-mode permissions for the selected signal must have been set by previously running
+      csi_set_umode_trap_permissions.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the specified signal is not software-raisable.
+      type: csi_status_t        
+  - name: csi_set_irq_priority
+    description: >
+      Set priority for an interrupt source.  Priorities range from 0 to CSI_MAX_INTERRUPT_PRIORITY,
+      where 0 indicates "never interrupt", and 1 is the lowest subsequent priority level.  Where supported,
+      priorities determine the order in which simultaneous interrupts at the same privilege level are
+      handled.  They are also compared against the threshold set using csi_set_irq_priority_thresh,
+      to determine if an interrupt will be masked.
+      This function must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    - name: priority
+      description: priority for this source.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate will be returned if the request is invalid.
+      type: csi_status_t
+  - name: csi_get_irq_priority
+    description: >
+      Get priority of an interrupt source.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    c-return-value:
+      description: Priority (resulting from calls to csi_set_irq_priority).  -1 will be returned if
+        the request is invalid.
+      type: int
+  - name: csi_set_irq_priority_thresh
+    description: >
+      Set a priority threshold below which interrupts will be masked.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: threshold
+      description: Priority threshold.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate will be returned if the request is invalid.
+      type: csi_status_t
+  - name: csi_get_irq_priority_thresh 
+    description: Get the current priority threshold for interrupts  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    c-return-value:
+      description: Priority threshold, or -1 if priority thresholds unsupported, or on error.
+      type: int
+  - name: csi_force_ext_irq
+    description: Force an external interrupt (e.g. for testing purposes).  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+  - name: csi_set_interrupt_level
+    description: >
+      Set interrupt level for a source.  If preemption has been enabled using csi_set_preemption, then 
+      higher-level interrupts will preempt lower-level interrupts at the same privilege level (if supported
+      by the hardware).  Levels range from 0 to CSI_MAX_INTERRUPT_LEVEL, where level 0
+      represents regular execution outside of an interrupt handler.
+      Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    - name: level
+      description: interrupt level.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_get_interrupt_level
+    description: >
+      Get level of an interrupt source.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: signal
+      description: >
+        Source enumeration for this signal.
+      type: int
+    c-return-value:
+      description: interrupt level (resulting from calls to csi_set_interrupt_level).  -1 will be returned if
+        the request is invalid.
+      type: int
+  - name: csi_set_interrupt_level_thresh
+    description: >
+      Set an interrupt threshold level for this hart, if supported.  Must be run in machine mode.
+      While processing an interrupt at a given level, the effective interrupt level is the maximum of the level
+      threshold, set by this function, and the level associated with the current interrupt.  Therefore this function
+      can be called to temporarily raise the level during a piece of critical code, thereby preventing preemption by
+      interrupts with a certain range of levels; while the "correct" interrupt level can be restored by setting
+      level threshold to 0.  Note: preemption must be enabled using csi_set_preemption for this to take effect.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: level_thresh
+      description: Interrupt level threshold.
+      type: int
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_get_interrupt_level_thresh
+    description: >
+      Get interrupt threshold level for this hart.  Must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    c-return-value:
+      description: interrupt level threshold (resulting from calls to csi_set_interrupt_level_thresh).  -1 will be returned if
+        the request is invalid.
+      type: int
+  - name: csi_route_interrupt
+    description: >
+      This function may optionally be used to route an interrupt source to the hart.  This is only required if using
+      csi_register_raw_m_interrupt_handler or csi_register_raw_m_interrupt_handler to register a "raw" handler.  Otherwise,
+      this routing functionality is performed within csi_register_m_isr or csi_register_u_isr, and this function should
+      not be run.  If run, it must be run in M-mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: source
+      description: >
+        Enumerated interrupt / exception source.  This must be one of the enumerations from csi_trap_source_t, or
+        a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
+        external interrupt source.
+      type: int
+  - name: csi_register_raw_m_interrupt_handler
+    description: >
+      This function may optionally be run by users who want to supply their own fast M-mode interrupt handling function
+      to be inserted directly into the vector table (thereby bypassing the RVM-CSI base trap handler in handling a given
+      mcause).  It must be run in machine mode.  Note that in this case the user's function must deal with save and restore
+      of register context (whereas this is not necessary for handlers registered using csi_register_m_isr).
+    notes:
+    - >
+      Many systems without CLIC (Core Local Interrrupt Controller) functionality may chose not to implement this function.  If it
+      is implemented on such systems, then there may be severe restrictions around its functionality, particularly on
+      placement of the user's handler in memory.  Some CLINT-based systems may not be able to implement this functionality
+      due to restrictions on writing to code memory.  Consult the BSP documentation for details.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: exccode
+      description: Exception code (mcause register LSBs) which will result in a jump into this handler
+      type: unsigned
+    - name: handler
+      description: >
+        Pointer to the user's handler function.  If this is NULL, any function previously registered using
+        csi_register_raw_interrupt_handler will be unregistered and the relevant signals will go back to being handled
+        by the base trap handler in the BSP.
+      type: void *
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_register_raw_u_interrupt_handler
+    description: >
+      This function may optionally be run by users who want to supply their own fast U-mode interrupt handling function
+      to be inserted directly into the vector table (thereby bypassing the RVM-CSI base trap handler in handling a given
+      mcause).  It must be run in user mode.  Note that in this case the user's function must deal with save and restore
+      of register context (whereas this is not necessary for handlers registered using csi_register_m_isr).
+    notes:
+    - >
+      It will not normally be possible to support this functionality on systems without CLIC (Core Local Interrrupt
+      Controller) functionality, since delegation of interrupts directly to U-mode has been removed (for CLINT mode) from
+      later editions of the RISC-V ISA.  If it is implemented on such systems, then there may be severe restrictions
+      around its functionality, particularly on placement of the user's handler in memory.  Some CLINT-based systems
+      may not be able to implement this functionality due to restrictions on writing to code memory.  Consult the BSP
+      documentation for details.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: exccode
+      description: Exception code (mcause register LSBs) which will result in a jump into this handler
+      type: unsigned
+    - name: handler
+      description: >
+        Pointer to the user's handler function.  If this is NULL, any function previously registered using
+        csi_register_raw_interrupt_handler will be unregistered and the relevant signals will go back to being handled
+        by the base trap handler in the BSP.
+      type: void *
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_register_raw_exception_handler
+    description: >
+      This function may optionally be run by users who want to supply their own fast exception handling function
+      to be inserted directly into the base of the vector table (thereby bypassing the RVM-CSI base trap handler in handling
+      exceptions).  It must be run in machine mode.  Note that in this case the user's function must deal with save and restore
+      of register context (whereas this is not necessary for handlers registered using csi_register_m_isr).
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: handler
+      description: >
+        Pointer to the user's handler function.  If this is NULL, any function previously registered using
+        csi_register_raw_exception_handler will be unregistered and exeptions will go back to being handled
+        by the base trap handler in the BSP.
+      type: void *
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_set_preemption
+    description: >
+      When any trap is first taken, the mie bit within mstatus reverts to 0, thereby disabling interrupts until it is set
+      to 1.  By default, the base trap handler leaves this bit at 0 until just before interrupt handling completes, thereby
+      preventing preemption.   This function may optionally be run to modify this behaviour and thus allow preemption.
+      This function must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: preemption_enabled
+      description: >
+        Set true to enable preemption, false to disable.
+      type: bool
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
+      type: csi_status_t
+  - name: csi_timer_config
+    description: >
+      Set the frequency of the system timer.  Note that there is typically a single timer for all
+      harts in the system, so this function can affect the operation of other harts.  The timer will
+      be compared against a compare register for each hart in order to produce a regular timer
+      interrupt at a tick rate configured using csi_set_timer_tick, which is used for timing purposes.
+      This function must run in machine mode.
+    c-params:
+    - name: timer_freq_mhz
+      description: >
+        System timer frequency in MHz
+      type: unsigned
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the request is invalid.
+      type: csi_status_t
+  - name: csi_set_timer_tick
+    description: >
+      This function causes the BSP to register a base handler for timer interrupts and to control the
+      value of the mtimecmp register in order to produce a regular timer tick interrupt at the
+      requested frequency.   This base timer handler can then service multiple timed events that may
+      be configured using csi_set_timeout. This function must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: tick_period_us
+      description: >
+        Timer tick period in microseconds.  Longer tick periods put less load on the system (due to
+        servicing interrupts), but limit the accuracy of any timed events. Passing a value of 0 for the
+        tick period turns off timer interrupts.
+      type: unsigned
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the request is invalid.
+      type: csi_status_t
+  - name: csi_set_m_timeout
+    description: >
+      Registers a callback function (callback) which will be called after a period set by timeout_ticks
+      unless cancelled with cs_cancel_timeout().  callback_context will be passed into the user's callback
+      function.  The structure pointed to by timeout_handle will be initialised by this function and used as a
+      handle for this timeout instance.  This function must be run in machine mode.
+    c-params:
+    - name: mctx
+      description: >
+        M-mode context pointer previously initialised by csi_interrupts_init.
+      type: void *
+    - name: timeout_handle
+      description: >
+        Handle for this timeout instance.  The structure declaration csi_timeout_t is published
+        by the BSP in csi_bsp_interrupts.h but should be considered private to the BSP.  Application
+        code instantiates this structure and passes in a pointer to it.
+      type: csi_timeout_t *
+    - name: callback
+      description: Pointer to the users callback function, to be called when the timeout expires.
+      type: csi_timeout_callback_t *
+    - name: callback_context
+      description: Pointer to the user's context space, which will be passed into the callback function.
+      type: void *
+    - name: timeout_ticks
+      description: Timeout period in ticks (configured by csi_set_timer_tick)
+      type: int
+    - name: priority
+      description: >
+        Priority for this timeout, used to determine the callback to be called if two callbacks
+        fall due on the same timer tick.  Higher numbers indicate higher priority.  A single priority
+        scheme is shared between M-mode and U-mode callbacks.
+      type: int
+    c-return-value:
+      description: Status of operation.
+      type: csi_status_t
+  - name: csi_set_u_timeout
+    description: >
+      Registers a callback function (callback) which will be called after a period set by timeout_ticks
+      unless cancelled with cs_cancel_timeout().  callback_context will be passed into the user's callback
+      function.  The structure pointed to by timeout_handle will be initialised by this function and used as a
+      handle for this timeout instance.  This function must be run in user mode.
+    c-params:
+    - name: irq_system_handle
+      description: >
+        Handle for the interrupt sub-system on this hart, obtained by running get_interrupts_u_handle
+      type: unsigned
+    - name: timeout_handle
+      description: >
+        Handle for this timeout instance.  The structure declaration csi_timeout_t is published
+        by the BSP in csi_bsp_interrupts.h but should be considered private to the BSP.  Application
+        code instantiates this structure and passes in a pointer to it.
+      type: csi_timeout_t *
+    - name: callback
+      description: Pointer to the users callback function, to be called when the timeout expires.
+      type: csi_timeout_callback_t *
+    - name: callback_context
+      description: Pointer to the user's context space, which will be passed into the callback function.
+      type: void *
+    - name: timeout_ticks
+      description: Timeout period in ticks (configured by csi_set_timer_tick)
+      type: int
+    - name: priority
+      description: >
+        Priority for this timeout, used to determine the callback to be called if two callbacks
+        fall due on the same timer tick.  Higher numbers indicate higher priority.  A single priority
+        scheme is shared between M-mode and U-mode callbacks.
+      type: int
+    c-return-value:
+      description: Status of operation.
+      type: csi_status_t
+  - name: csi_cancel_timeout
+    description: >
+      Cancels a timeout previously configured with csi_set_timeout, using the associated handle.
+      Cancelling a timer that has already expired is not an error.
+      This function may be run in either machine mode or user mode.
+    c-params:
+    - name: timeout_handle
+      description: handle for this timeout instance, previously initialised with csi_set_timeout
+      type: csi_timeout_t *
+    c-return-value:
+      description: Status of operation.
+      type: csi_status_t
+  - name: csi_read_mtime
+    description: >
+      Read the current timer value.  This function can be called from M-mode or U-mode.  However,
+      on systems where the timer is not directly readable from U-mode, the function will have to
+      ECALL to M-mode to make the read, which will likely make the value innaccurate due to the
+      delay incurred by this.
+    c-return-value:
+      description: Current timer value
+      type: long long

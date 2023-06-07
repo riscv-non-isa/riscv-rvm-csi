@@ -131,14 +131,14 @@ def format_c_function(function):
 
     return out_str
 
-def generate_c(api_definition, out_dir):
+def generate_c(api_definition, module_definitions, out_dir):
     ''' Top level function which iterates through each of the modules in the api definition 
         to build C header content and write it an appropriate file.
         Input parameters are the api_definition object and the output directory for the header files 
     '''
     
-    for module in api_definition['modules']:
-        
+    for m in module_definitions:
+        module = m['module']
         out_file = pathlib.Path(out_dir, module['c-filename'])
         
         # Start the comment.

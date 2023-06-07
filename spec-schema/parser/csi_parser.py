@@ -5,6 +5,7 @@ import os.path
 
 default_schema_file_path = os.path.join(os.path.dirname(__file__), "..")
 default_schema_file_name = "rvm-csi.schema.json"
+default_module_schema_file_name = "rvm-csi-module.schema.json"
 
 def parse_arguments(argv):
     ''' Parses command land args using standard Python module.'''
@@ -37,21 +38,21 @@ def validate_json_schema(api_definition, schema):
     
     jsonschema.validate(api_definition, schema)
     
-def generate_documentation(api_definition, opts):
+def generate_documentation(api_definition, module_definitions, opts):
     ''' Calls language appropriate documentation generation function.'''
     
     target_language = opts.target_language
     if target_language == "C":
-        doc_gen.generate_c_adoc(api_definition, opts.doc_out_dir)
+        doc_gen.generate_c_adoc(api_definition, module_definitions, opts.doc_out_dir)
     else: 
         raise('Target language implementation undefined')
     
-def generate_headers(api_definition, opts):
+def generate_headers(api_definition, module_definitions, opts):
     ''' Calls language appropriate header generation function.'''
     
     target_language = opts.target_language
     if target_language == "C":
-        header_gen.generate_c(api_definition, opts.out_dir)
+        header_gen.generate_c(api_definition, module_definitions, opts.out_dir)
     else: 
         raise('Target language implementation undefined')
         
@@ -62,18 +63,28 @@ def main(argv):
     '''
     
     options = parse_arguments(argv)
-    api_definition = load_api_definition(options.infile)
-    
-    schema = load_api_schema(os.path.join(default_schema_file_path, default_schema_file_name))
 
+    # Load top-level API definition and validate against its schema
+    api_definition = load_api_definition(options.infile)
+    schema = load_api_schema(os.path.join(default_schema_file_path, default_schema_file_name))
     validate_json_schema(api_definition, schema)
+
+    # Load definitions of each module and validate them against their schema
+    module_definitions = []
+    module_pathroot = os.path.dirname(options.infile)
+    module_schema = load_api_schema(os.path.join(default_schema_file_path, default_module_schema_file_name))
+    for module in api_definition["modules"]:
+        # Module file paths are relative to top-level YAML
+        module_api_definition = load_api_definition(os.path.join(module_pathroot, module))
+        validate_json_schema(module_api_definition, module_schema)
+        module_definitions.append(module_api_definition)
     
+    # Generate docs or headers as requested
     if (options.generate_docs):
-        return generate_documentation(api_definition, options)
-    else: 
-        return generate_headers(api_definition, options)
+        return generate_documentation(api_definition, module_definitions, options)
+    else:
+        return generate_headers(api_definition, module_definitions, options)
             
 if __name__ == '__main__':
     main(sys.argv[1:])
-
 
