@@ -95,11 +95,10 @@ to it.  There is no intention to abstract the functionality of the OS itself.
 
 The following diagram illustrate how these APIs might fit within a user application which makes use of an RTOS:
 
-image::RVM-CSI_with_RTOS.png[]
 .RVM-CSI Used with an RTOS
+image::RVM-CSI_with_RTOS.png[]
 
 The following diagram illustrates how a bare-metal application might make use of these APIs:
 
-image::RVM-CSI_Bare-Metal.png[]
 .RVM-CSI Used with a Bare-Metal Application
-
+image::RVM-CSI_Bare-Metal.png[]

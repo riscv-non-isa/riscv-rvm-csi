@@ -1,0 +1,26 @@
+module:
+  name: Standard Type Definitions
+  description: >
+    General-purpose definitions such as return codes.
+  c-specific: true
+  c-filename: csi_types.h
+  c-type-declarations:
+  - name: csi_status_t
+    description: Return type for functions indicating status 
+    type: enum
+    enum-members:
+    - name: CSI_SUCCESS
+      value: 0
+      description: Operation completed successfully
+    - name: CSI_NOT_IMPLEMENTED
+      value: -1
+      description: Functionality not implemented
+    - name: CSI_ERROR
+      value: -2
+      description: Generic error code
+    - name: CSI_NOT_INITIALIZED
+      value: -3
+      description: Sub-system not correctly initialised, operation failed.
+    - name: CSI_OUT_OF_MEM
+      value: -4
+      description: Out-of-memory error

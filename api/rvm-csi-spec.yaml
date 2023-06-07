@@ -8,5 +8,7 @@ boilerplate: >
 adoc-optimization: pdf
 top-heading-level: 2
 modules:
-  - csi_defs-spec.yaml
-  - csi_interrupts-spec.yaml
+  - csi_types-spec.yaml
+  - csi_ll-spec.yaml
+  - csi_hl_interrupt_sources-spec.yaml
+  - csi_hl_interrupts-spec.yaml

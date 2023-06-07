@@ -1,14 +1,13 @@
 /*
- * Trap Handling / Interrupt and Timer Support
+ * High-Level Trap Handling / Interrupt and Timer Support
  *
  * This module provides functionality for routing interrupts and registering
- * handlers for traps, controlling the system timer, and managing timed events. The
- * BSP provides base trap handler functionality, which is installed when the
- * initialization function csi_interrupts_init is called.  This base trap handling
- * code provides save and restore of register context, performs default exception
- * handling, and calls any handlers registered by the user. Systems using RVM-CSI
- * may provide their own trap handling support, in which case csi_interrupts_init
- * should not be called, and all functions in this module will be inoperative.
+ * handlers for traps, controlling the system timer, and managing timed events. For
+ * systems that choose to use this module, the BSP provides base trap handler
+ * functionality, which is  installed when the initialization function
+ * csi_interrupts_init is called.  This base trap handling code provides save and
+ * restore of register context, performs default exception handling, and calls any
+ * handlers registered by the user.
  *
  * There will be at most one instance of the trap handling and interrupt subsystem
  * per hart.
@@ -39,11 +38,12 @@
  * generated file: DO NOT EDIT
  */
 
-#ifndef CSI_INTERRUPTS_H
-#define CSI_INTERRUPTS_H
+#ifndef CSI_HL_INTERRUPTS_H
+#define CSI_HL_INTERRUPTS_H
 
-#include "csi_defs.h"
-#include "csi_bsp_interrupts.h"
+#include "csi_types.h"
+#include "csi_hl_interrupt_sources.h"
+#include "csi_hl_bsp_interrupts.h"
 
 /*
  * Function prototype for the user's trap handler (M-mode or U-mode)
@@ -592,7 +592,7 @@ csi_status_t csi_set_timer_tick(void *mctx, unsigned tick_period_us);
  * @param mctx: M-mode context pointer previously initialised by
  * csi_interrupts_init.
  * @param timeout_handle: Handle for this timeout instance.  The structure
- * declaration csi_timeout_t is published by the BSP in csi_bsp_interrupts.h but
+ * declaration csi_timeout_t is published by the BSP in csi_hl_bsp_interrupts.h but
  * should be considered private to the BSP.  Application code instantiates this
  * structure and passes in a pointer to it.
  * @param callback: Pointer to the users callback function, to be called when the
@@ -618,7 +618,7 @@ csi_status_t csi_set_m_timeout(void *mctx, csi_timeout_t *timeout_handle, csi_ti
  * @param irq_system_handle: Handle for the interrupt sub-system on this hart,
  * obtained by running get_interrupts_u_handle
  * @param timeout_handle: Handle for this timeout instance.  The structure
- * declaration csi_timeout_t is published by the BSP in csi_bsp_interrupts.h but
+ * declaration csi_timeout_t is published by the BSP in csi_hl_bsp_interrupts.h but
  * should be considered private to the BSP.  Application code instantiates this
  * structure and passes in a pointer to it.
  * @param callback: Pointer to the users callback function, to be called when the
@@ -656,4 +656,4 @@ csi_status_t csi_cancel_timeout(csi_timeout_t *timeout_handle);
 long long csi_read_mtime(void);
 
 
-#endif /* CSI_INTERRUPTS_H */ 
+#endif /* CSI_HL_INTERRUPTS_H */ 

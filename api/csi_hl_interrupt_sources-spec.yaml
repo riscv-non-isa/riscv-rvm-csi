@@ -1,37 +1,17 @@
 module:
-  name: General-Purpose Definitions for use in CSI code
+  name: Enumeration of Standard Interrupt Sources
   description: >
-    This file is included from rvm_csi.h prior to all other headers and contains general-purpose
-    definitions which may be used by subsequent headers.
+    Enumeration of standard interrupt sources for use by high-level interrupt and timer sub-system APIs.
   c-specific: true
-  c-filename: csi_defs.h
+  c-filename: csi_hl_interrupt_sources.h
   c-type-declarations:
-  - name: csi_status_t
-    description: Return type for functions indicating status 
-    type: enum
-    enum-members:
-    - name: CSI_SUCCESS
-      value: 0
-      description: Operation completed successfully
-    - name: CSI_NOT_IMPLEMENTED
-      value: -1
-      description: Functionality not implemented
-    - name: CSI_ERROR
-      value: -2
-      description: Generic error code
-    - name: CSI_NOT_INITIALIZED
-      value: -3
-      description: Sub-system not correctly initialised, operation failed.
-    - name: CSI_OUT_OF_MEM
-      value: -4
-      description: Out-of-memory error
   - name: csi_trap_source_t
     description: >
       Enumerates all sources in the system that can give rise to a trap event.  This enumeration should
       be treated as an integer which can have additional values beyond those enumerated here.  A standard
       set of interrupt and exception sources are enumerated here, which exclude external sources.  All
-      external interrupt sources should be enumerated by the BSP within csi_bsp_interrupts.h; and their
-      ennumerated values should follow on from CSI_NUM_STANDARD_TRAP_SOURCES.  csi_bsp_interrupts.h must
+      external interrupt sources should be enumerated by the BSP within csi_hl_bsp_interrupts.h; and their
+      ennumerated values should follow on from CSI_NUM_STANDARD_TRAP_SOURCES.  csi_hl_bsp_interrupts.h must
       also define CSI_TOTAL_BSP_TRAP_SOURCES to indicate the total number of sources defined.  User
       applications may then use values above this to enumerate user-defined software signals.  Note that
       the actual enumerated values have no meaning beyond serving to uniquely identify the source of a

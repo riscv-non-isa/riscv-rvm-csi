@@ -1,0 +1,20 @@
+module:
+  name: Low-Level HAL API
+  description: >
+    APIs giving access to low-level functionality (may not be portable).
+  c-specific: true
+  c-filename: csi_ll.h
+  c-type-declarations:
+  - name: csi_interrupt_enables_t
+    description: Interrupt enable bits in the mie CSR
+    type: enum
+    enum-members:
+    - name: CSI_SW_INTERRUPTS_ENABLE
+      value: 8
+      description: Software interrupts enable bit index
+    - name: CSI_TIMER_INTERRUPTS_ENABLE
+      value: 128
+      description: Timer interrupts enable bit index
+    - name: CSI_EXT_INTERRUPTS_ENABLE
+      value: 2048
+      description: External interrupts enable bit index

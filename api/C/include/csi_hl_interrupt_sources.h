@@ -1,37 +1,26 @@
 /*
- * General-Purpose Definitions for use in CSI code
+ * Enumeration of Standard Interrupt Sources
  *
- * This file is included from rvm_csi.h prior to all other headers and contains
- * general-purpose definitions which may be used by subsequent headers.
+ * Enumeration of standard interrupt sources for use by high-level interrupt and
+ * timer sub-system APIs.
  *
  * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
  * generated file: DO NOT EDIT
  */
 
-#ifndef CSI_DEFS_H
-#define CSI_DEFS_H
-
-/*
- * Return type for functions indicating status
- */
-typedef enum {
-    CSI_SUCCESS = 0, /* Operation completed successfully */
-    CSI_NOT_IMPLEMENTED = -1, /* Functionality not implemented */
-    CSI_ERROR = -2, /* Generic error code */
-    CSI_NOT_INITIALIZED = -3, /* Sub-system not correctly initialised, operation failed. */
-    CSI_OUT_OF_MEM = -4, /* Out-of-memory error */
-} csi_status_t;
+#ifndef CSI_HL_INTERRUPT_SOURCES_H
+#define CSI_HL_INTERRUPT_SOURCES_H
 
 /*
  * Enumerates all sources in the system that can give rise to a trap event.  This
  * enumeration should be treated as an integer which can have additional values
  * beyond those enumerated here.  A standard set of interrupt and exception sources
  * are enumerated here, which exclude external sources.  All external interrupt
- * sources should be enumerated by the BSP within csi_bsp_interrupts.h; and their
- * ennumerated values should follow on from CSI_NUM_STANDARD_TRAP_SOURCES.
- * csi_bsp_interrupts.h must also define CSI_TOTAL_BSP_TRAP_SOURCES to indicate the
- * total number of sources defined.  User applications may then use values above
- * this to enumerate user-defined software signals.  Note that the actual
+ * sources should be enumerated by the BSP within csi_hl_bsp_interrupts.h; and
+ * their ennumerated values should follow on from CSI_NUM_STANDARD_TRAP_SOURCES.
+ * csi_hl_bsp_interrupts.h must also define CSI_TOTAL_BSP_TRAP_SOURCES to indicate
+ * the total number of sources defined.  User applications may then use values
+ * above this to enumerate user-defined software signals.  Note that the actual
  * enumerated values have no meaning beyond serving to uniquely identify the source
  * of a trap event.  They are not intended to map onto values in the mcause
  * register.
@@ -66,4 +55,4 @@ typedef enum {
 } csi_interrupt_enables_t;
 
 
-#endif /* CSI_DEFS_H */ 
+#endif /* CSI_HL_INTERRUPT_SOURCES_H */ 
