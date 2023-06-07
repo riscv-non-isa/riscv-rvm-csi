@@ -53,16 +53,3 @@ module:
       description: Store page-fault
     - name: CSI_NUM_STANDARD_TRAP_SOURCES
       description: Must come last in this list
-  - name: csi_interrupt_enables_t
-    description: Interrupt enable bits in the mie CSR
-    type: enum
-    enum-members:
-    - name: CSI_SW_INTERRUPTS_ENABLE
-      value: 8
-      description: Software interrupts enable bit index
-    - name: CSI_TIMER_INTERRUPTS_ENABLE
-      value: 128
-      description: Timer interrupts enable bit index
-    - name: CSI_EXT_INTERRUPTS_ENABLE
-      value: 2048
-      description: External interrupts enable bit index

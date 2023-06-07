@@ -128,5 +128,7 @@ behaviour defaults to SEMIHOST, in which case behaviour is undefined if a semiho
 CSI_LOG_INFO.  See documentation of these macros for details.
 |===
 
-include::auto-gen/modules/csi_defs_h.adoc[]
-include::auto-gen/modules/csi_interrupts_h.adoc[]
+include::auto-gen/modules/csi_types_h.adoc[]
+include::auto-gen/modules/csi_ll_h.adoc[]
+include::auto-gen/modules/csi_hl_interrupt_sources_h.adoc[]
+include::auto-gen/modules/csi_hl_interrupts_h.adoc[]

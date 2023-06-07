@@ -45,14 +45,5 @@ typedef enum {
     CSI_NUM_STANDARD_TRAP_SOURCES, /* Must come last in this list */
 } csi_trap_source_t;
 
-/*
- * Interrupt enable bits in the mie CSR
- */
-typedef enum {
-    CSI_SW_INTERRUPTS_ENABLE = 8, /* Software interrupts enable bit index */
-    CSI_TIMER_INTERRUPTS_ENABLE = 128, /* Timer interrupts enable bit index */
-    CSI_EXT_INTERRUPTS_ENABLE = 2048, /* External interrupts enable bit index */
-} csi_interrupt_enables_t;
-
 
 #endif /* CSI_HL_INTERRUPT_SOURCES_H */ 
