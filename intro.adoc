@@ -1,8 +1,8 @@
 [[intro]]
 == Introduction
 
-RVM-CSI (Risc-V eMbedded - Common Software Interface) has been defined with the aim of facilitating the portability
-of source code across different embedded platforms.
+RVM-CSI (Risc-V Microcontrollers - Common Software Interface) has been defined with the aim of facilitating the portability
+of source code across different embedded microcontroller platforms.
 
 RVM refers to a class of _platforms_ and _profiles_ which RISC-V International intends to define. A profile defines
 a specific base ISA, plus ISA extensions and any options applicable within those ISA extensions. A platform comprises
@@ -13,8 +13,8 @@ platform in order to make it easier to write software that is portable between p
 the application processor space, where binary distributions need to be created that will work on platforms from
 multiple vendors. Hence most focus in this area has been on the RVA (application processor) platforms.
 
-In the embedded space, the definition of profiles and platforms is not motivated by binary software portability.
-Rather, since we assume that software will be built for a specific embedded platform, we can deal with the problem
+In the microcontroller space, the definition of profiles and platforms is not motivated by binary software portability.
+Rather, since we assume that software will be built for a specific platform, we can deal with the problem
 of software portability by creating a software layer that abstracts the features of the platform. Hence the motivation
 behind RVM-CSI.
 
