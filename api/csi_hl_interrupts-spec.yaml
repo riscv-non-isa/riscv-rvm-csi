@@ -29,6 +29,10 @@ module:
     - >
       BSPs should use vectored interrupts where possible; although to save memory, handlers
       for many different mcause values may share code.
+    - >
+      When this module is in use, use of the mscratch register is reserved for use by the implementing BSP code.
+      Typically the base trap handler implementation will rely on the use of this register to store a pointer
+      to its context space.
   c-specific: false
   c-filename: csi_hl_interrupts.h
   c-include-files:
@@ -54,18 +58,6 @@ module:
     - name: mtval
       description: Contents of the mtval register associated with this trap.
       type: unsigned
-  - name: csi_timeout_callback_t
-    description: Function prototype for the user's timeout callback function (M-mode or U-mode)
-    type: function
-    func-typedef-retval: void
-    func-typedef-params:
-    - name: timeout_handle
-      description: Handle for this timeout instance, as passed into csi_set_timeout
-      type: csi_timeout_t *
-    - name: callback_context
-      description: >
-        Context pointer that was passed into csi_set_timeout
-      type: void *
   functions:
   - name: csi_interrupts_init
     description: >
@@ -134,9 +126,11 @@ module:
       trap arising from from the source signal.  isr_ctx is a parameter that will be passed into the user's ISR
       along with the signal number and mtval contents.  This function transparently deals with routing the desired signal
       to the hart and enabling the interrupt.  This function must run in machine mode.  Running this function with a NULL
-      pointer for the isr parameter will un-register a previously registered handler.  NOTE: there can only be one
-      handler registered for any given signal.  Re-running this function to register a second handler for a signal
-      will replace the previous, and is not an error.
+      pointer for the isr parameter will un-register a previously registered handler.
+    notes:
+    - >
+      There can only be one handler registered for any given signal.  Re-running this function to register a second
+      handler for a signal will replace the previous, and is not an error.
     c-params:
     - name: mctx
       description: >
@@ -171,8 +165,15 @@ module:
       to the hart and enabling the interrupt.  This function must run in user mode.  Running this function with a NULL
       pointer for the isr parameter will un-register a previously registered handler.  Note that before registering
       a user mode handler for a source, csi_set_umode_trap_permissions must have been run (from machine mode) in order
-      to enable handling of the trap in U-mode.  NOTE: there can only be one handler registered for any given signal.
-      Re-running this function to register a second handler for a signal will replace the previous, and is not an error.
+      to enable handling of the trap in U-mode.
+    notes:
+    - >
+      There can only be one handler registered for any given signal.  Re-running this function to register a second
+      handler for a signal will replace the previous, and is not an error.
+    - >
+      If an interrupt that is to be handled in U-mode arrives while in M-mode, it should normally be deferred until the
+      privilege level reverts to U-mode.  However some BSP implementations may allow such interrupts to be handled
+      immediately.  This behaviour should be set out in the BSP documentation.
     c-params:
     - name: irq_system_handle
       description: >
@@ -287,22 +288,6 @@ module:
         Status of enable operation.  CSI_ERROR will be returned if the source parameter is
         invalid.
       type: csi_status_t
-  - name: csi_set_interrupt_enables
-    description: Enable or disable 3 classes of interrupts for this hart.  Must be run in machine mode.
-    c-params:
-    - name: int_enables
-      description: >
-        This word will be written directly to the mie CSR in order to control whether software interrupts,
-        timer interrupts and external interrupts are enabled.  To enable all 3 classes of interrupts,
-        pass a value of CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE | CSI_EXT_INTERRUPTS_ENABLE.  To
-        disable all interrupts, pass a value of 0.
-      type: unsigned
-    c-return-value:
-      description: >
-        Integer in the same format as int_enables, reflecting the previous value of int_enables prior to the
-        change.  This may be stored and passed back into another call to csi_set_interrupt_enables in order
-        to restore the previous interrupt enables state.
-      type: unsigned
   - name: csi_set_umode_trap_permissions
     description: >
       Informs the interrupt subsystem whether a given signal is allowed to be handled in user mode.  This function
@@ -534,7 +519,7 @@ module:
   - name: csi_route_interrupt
     description: >
       This function may optionally be used to route an interrupt source to the hart.  This is only required if using
-      csi_register_raw_m_interrupt_handler or csi_register_raw_m_interrupt_handler to register a "raw" handler.  Otherwise,
+      csi_register_fast_m_interrupt_handler or csi_register_fast_m_interrupt_handler to register a "raw" fast handler.  Otherwise,
       this routing functionality is performed within csi_register_m_isr or csi_register_u_isr, and this function should
       not be run.  If run, it must be run in M-mode.
     c-params:
@@ -548,7 +533,7 @@ module:
         a value from the BSP (extending the enumerations in csi_trap_source_t) enumerating a platform-specific
         external interrupt source.
       type: int
-  - name: csi_register_raw_m_interrupt_handler
+  - name: csi_register_fast_m_interrupt_handler
     description: >
       This function may optionally be run by users who want to supply their own fast M-mode interrupt handling function
       to be inserted directly into the vector table (thereby bypassing the RVM-CSI base trap handler in handling a given
@@ -571,14 +556,14 @@ module:
     - name: handler
       description: >
         Pointer to the user's handler function.  If this is NULL, any function previously registered using
-        csi_register_raw_interrupt_handler will be unregistered and the relevant signals will go back to being handled
+        csi_register_fast_interrupt_handler will be unregistered and the relevant signals will go back to being handled
         by the base trap handler in the BSP.
       type: void *
     c-return-value:
       description: >
         Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
       type: csi_status_t
-  - name: csi_register_raw_u_interrupt_handler
+  - name: csi_register_fast_u_interrupt_handler
     description: >
       This function may optionally be run by users who want to supply their own fast U-mode interrupt handling function
       to be inserted directly into the vector table (thereby bypassing the RVM-CSI base trap handler in handling a given
@@ -603,14 +588,14 @@ module:
     - name: handler
       description: >
         Pointer to the user's handler function.  If this is NULL, any function previously registered using
-        csi_register_raw_interrupt_handler will be unregistered and the relevant signals will go back to being handled
+        csi_register_fast_interrupt_handler will be unregistered and the relevant signals will go back to being handled
         by the base trap handler in the BSP.
       type: void *
     c-return-value:
       description: >
         Status of operation.  CSI_ERROR or CSI_NOT_IMPLEMENTED will be returned as appropriate if the request is invalid.
       type: csi_status_t
-  - name: csi_register_raw_exception_handler
+  - name: csi_register_fast_exception_handler
     description: >
       This function may optionally be run by users who want to supply their own fast exception handling function
       to be inserted directly into the base of the vector table (thereby bypassing the RVM-CSI base trap handler in handling
@@ -624,7 +609,7 @@ module:
     - name: handler
       description: >
         Pointer to the user's handler function.  If this is NULL, any function previously registered using
-        csi_register_raw_exception_handler will be unregistered and exeptions will go back to being handled
+        csi_register_fast_exception_handler will be unregistered and exeptions will go back to being handled
         by the base trap handler in the BSP.
       type: void *
     c-return-value:

@@ -21,5 +21,12 @@ typedef enum {
     CSI_OUT_OF_MEM = -4, /* Out-of-memory error */
 } csi_status_t;
 
+/*
+ * Function prototype for the user's timeout callback function (M-mode or U-mode)
+ *
+ * @param callback_context: Context pointer that was passed into csi_set_timeout
+ */
+typedef void (csi_timeout_callback_t)(void *callback_context);
+
 
 #endif /* CSI_TYPES_H */ 

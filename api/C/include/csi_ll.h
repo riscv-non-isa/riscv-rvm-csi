@@ -20,4 +20,21 @@ typedef enum {
 } csi_interrupt_enables_t;
 
 
+/*
+ * Enable or disable 3 classes of interrupts for this hart.  Must be run in machine
+ * mode.
+ *
+ * @param int_enables: This word will be written directly to the mie CSR in order
+ * to control whether software interrupts, timer interrupts and external interrupts
+ * are enabled.  To enable all 3 classes of interrupts, pass a value of
+ * CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE |
+ * CSI_EXT_INTERRUPTS_ENABLE.  To disable all interrupts, pass a value of 0.
+ * @return : Integer in the same format as int_enables, reflecting the previous
+ * value of int_enables prior to the change.  This may be stored and passed back
+ * into another call to csi_ll_set_interrupt_enables in order to restore the
+ * previous interrupt enables state.
+ */
+unsigned csi_ll_set_interrupt_enables(unsigned int_enables);
+
+
 #endif /* CSI_LL_H */ 

@@ -24,3 +24,12 @@ module:
     - name: CSI_OUT_OF_MEM
       value: -4
       description: Out-of-memory error
+  - name: csi_timeout_callback_t
+    description: Function prototype for the user's timeout callback function (M-mode or U-mode)
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: callback_context
+      description: >
+        Context pointer that was passed into csi_set_timeout
+      type: void *
