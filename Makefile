@@ -1,27 +1,74 @@
+# Makefile for RISC-V Doc Template
+#
+# This work is licensed under the Creative Commons Attribution-ShareAlike 4.0
+# International License. To view a copy of this license, visit
+# http://creativecommons.org/licenses/by-sa/4.0/ or send a letter to
+# Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+#
+# SPDX-License-Identifier: CC-BY-SA-4.0
+#
+# Description:
+# 
+# This Makefile is designed to automate the process of building and packaging 
+# the Doc Template for RISC-V Extensions.
+
+DATE ?= $(shell date +%Y-%m-%d)
+VERSION ?= v0.0.0
+REVMARK ?= Draft
+DOCKER_RUN := docker run --rm -v ${PWD}:/build -w /build \
+riscvintl/riscv-docs-base-container-image:latest
+
 HEADER_SOURCE := header.adoc
 PDF_RESULT := RVM-CSI.pdf
-SSOT_YAML := api/rvm-csi-spec.yaml
+SSOT_YAML := ./api/rvm-csi-spec.yaml
 DOCS_OUT_DIR := auto-gen
-CODE_OUT_DIR := api/C/include
+CODE_OUT_DIR := ./api/C/include
+ASCIIDOCTOR_PDF := asciidoctor-pdf
+OPTIONS := --trace \
+           -a compress \
+           -a mathematical-format=svg \
+           -a revnumber=${VERSION} \
+           -a revremark=${REVMARK} \
+           -a revdate=${DATE} \
+           -a pdf-fontsdir=docs-resources/fonts \
+           -a pdf-style=docs-resources/themes/riscv-pdf.yml \
+           --failure-level=ERROR
+REQUIRES := --require=asciidoctor-bibtex \
+            --require=asciidoctor-diagram \
+            --require=asciidoctor-mathematical
 
-all: build
+.PHONY: all build clean build-container build-no-container generate-code-from-yaml
 
-build:
+all: generate-code-from-yaml build
+
+build: 
+	@echo "Checking if Docker is available..."
+	@if command -v docker &> /dev/null ; then \
+		echo "Docker is available, building inside Docker container..."; \
+		$(MAKE) build-container; \
+	else \
+		echo "Docker is not available, building without Docker..."; \
+		$(MAKE) build-no-container; \
+	fi
+
+generate-code-from-yaml:
 	@echo "Auto-generating docs and code from YAML"
-	python3 spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)
-	python3 spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)
+	docker build -t spec-schema:latest -f ./spec-schema/Dockerfile ./spec-schema
+	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)"
+	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)"
 
-	@echo "Building PDF from asciidoc"
-	asciidoctor-pdf \
-    --attribute=mathematical-format=svg \
-    --attribute=pdf-fontsdir=docs-resources/fonts \
-    --attribute=pdf-style=docs-resources/themes/riscv-pdf.yml \
-    --failure-level=ERROR \
-    --require=asciidoctor-bibtex \
-    --require=asciidoctor-diagram \
-    --out-file=$(PDF_RESULT) \
-    $(HEADER_SOURCE)
+build-container:
+	@echo "Starting build inside Docker container..."
+	$(DOCKER_RUN) /bin/sh -c "$(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) --out-file=$(PDF_RESULT) $(HEADER_SOURCE)"
+	@echo "Build completed successfully inside Docker container."
+
+build-no-container:
+	@echo "Starting build..."
+	$(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) --out-file=$(PDF_RESULT) $(HEADER_SOURCE)
+	@echo "Build completed successfully."
 
 clean:
-	rm $(PDF_RESULT)
-	rm -rf $(DOCS_OUT_DIR)/*
+	@echo "Cleaning up generated files..."
+	-@rm -f $(PDF_RESULT)
+	-@rm -rf $(DOCS_OUT_DIR)/*
+	@echo "Cleanup completed."
