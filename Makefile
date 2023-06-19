@@ -54,8 +54,8 @@ build:
 generate-code-from-yaml:
 	@echo "Auto-generating docs and code from YAML"
 	docker build -t spec-schema:latest -f ./spec-schema/Dockerfile ./spec-schema
-	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)"
-	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)"
+	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)"
+	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)"
 
 build-container:
 	@echo "Starting build inside Docker container..."

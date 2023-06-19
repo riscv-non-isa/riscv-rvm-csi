@@ -1,8 +1,8 @@
 = RVM-CSI Specification Repo
 
-This repository contains the specification for RVM-CSI (Risc-V eMbedded - Common Software
+This repository contains the specification for RVM-CSI (Risc-V Microcontrollers - Common Software
 Interface).  This defines a programming layer aimed at source-code compatibility across
-embedded platforms, and defines the format of Board Support Packs (BSPs) supplying code
+embedded microcontroller platforms, and defines the format of Board Support Packs (BSPs) supplying code
 conforming to that interface.
 
 = License

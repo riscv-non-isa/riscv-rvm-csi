@@ -1,0 +1,30 @@
+module:
+  name: Interrupt and Timer Support
+  description: Interrupt and timer support operations
+  c-specific: false
+  c-filename: csi_interrupts.h
+  functions:
+    - name: csi_register_isr
+      description: >
+        Registers a user-supplied function <code>isr</code>that will be called by the base trap handler on receipt
+        of a trap arising from a given signal
+      c-specific-notes:
+        - >
+          This function uses the CSI base trap handler so is surrounded by <code>#ifndef CUSTOM_BASE_TRAP_HANDLER</code>.
+          It transparently deals with routing the desired signal to the hart and enabling the interrupt
+          (by internally calling <code>cs_route_signal()</code>).
+      c-params:
+        - name: isr
+          description: User's Interrupt Service Routine
+          type: csi_isr_t *
+        - name: isr_ctx
+          description: Context pointer to pass into user's ISR
+          type: void *
+        - name: signal
+          description: Enumerated signal to be handled by this ISR
+          type: csi_signal_t
+          notes:
+          - example of function parameter notes
+      c-return-value: 
+        description: Status of register isr
+        type: csi_status_t

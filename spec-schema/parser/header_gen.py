@@ -1,4 +1,5 @@
 import textwrap, pathlib
+from parser_common import format_c_function_prototype, format_c_function_typedef, indent, format_c_enum_typedef
 
 def format_c_comment_lines(input_string):
     ''' Takes a string as input. 
@@ -57,12 +58,17 @@ def format_c_type_prefix_list(prefix_list):
     return out_str
     
 def format_c_type_declaration(declaration):
-    def indent():
-        return "    "   # indent 4 spaces 
-    
     out_str = ""
-     
-    # values can be "struct", "enum", "int", "unsigned"
+    if 'description' in declaration.keys():
+        out_str += "/*\n "
+        out_str += format_c_comment_lines(declaration['description'])
+        if 'func-typedef-params' in declaration.keys():
+            out_str += "*\n "
+            for param in declaration['func-typedef-params']:
+                out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])
+        out_str += "*/\n"
+
+    # values can be "struct", "enum", "int", "unsigned", "function"
     c_type = declaration['type']
     if c_type == "int":
         out_str += "typedef int " + declaration['name'] + ";\n"
@@ -71,14 +77,8 @@ def format_c_type_declaration(declaration):
         out_str += "typedef unsigned int " + declaration['name'] + ";\n"
         
     elif c_type == "enum":
-        out_str += "typedef enum {\n"
-        for member in declaration['enum-members']:
-            out_str += indent() + member['name'] 
-            if 'value' in member.keys():
-                out_str += " = " + str(member['value']) 
-            out_str += ",\n" # trailing comma should be valid for modern compilers
-        out_str += "} " + declaration['name'] + ";\n"
-            
+        out_str += format_c_enum_typedef(declaration, True)
+
     elif c_type == "struct":
         out_str += "typedef struct {\n"
         for member in declaration['struct-members']:
@@ -89,7 +89,10 @@ def format_c_type_declaration(declaration):
             
             out_str += indent() + member_type + delimiter + member['name'] + ";\n"
         out_str += "} " + declaration['name'] + ";\n"
-        
+    
+    elif c_type == "function":
+        out_str += format_c_function_typedef(declaration)
+
     else:
         raise('undefined C type definition')   # Should not be possible to reach here            
     
@@ -108,43 +111,34 @@ def format_c_function(function):
     out_str = "/*\n "
         
     out_str += format_c_comment_lines(function['description'])
-            
-    # Close comment
-    out_str += "*/\n"
-    
-    return_type = "void" 
-    if 'c-return-value' in function.keys():
-        return_type = function['c-return-value']['type']
-    
-    out_str += return_type + " " + function['name'] + "("
+    out_str += "*\n "
+    if 'notes' in function.keys():
+        for note in function['notes']:
+            out_str += format_c_comment_lines(note)
+        out_str += "*\n "
+
     if 'c-params' in function.keys():
         for param in function['c-params']:
-            
-            param_type = param['type']
-            param_name = param['name']
-            if param_type[-1] == '*':
-                # pointer types - present with spacing as "int *a" 
-                param_type = param_type.rstrip('* ')
-                param_name = "*" + param_name
-                                                                    
-            out_str += param_type + " " + param_name + ", "
-        
-        out_str = out_str.rstrip(", ") # Get rid of last comma/space
-        
-    else:
-        out_str += "void"       
-    
-    out_str +=");\n"
-    return out_str     
+            out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])
+    if 'c-return-value' in function.keys():
+        out_str += format_c_comment_lines("@return " + ": " + function['c-return-value']['description'])
 
-def generate_c(api_definition, out_dir):
+    # Close comment
+    out_str += "*/\n"
+
+    # Write out the function prototype
+    out_str += format_c_function_prototype(function)
+
+    return out_str
+
+def generate_c(api_definition, module_definitions, out_dir):
     ''' Top level function which iterates through each of the modules in the api definition 
         to build C header content and write it an appropriate file.
         Input parameters are the api_definition object and the output directory for the header files 
     '''
     
-    for module in api_definition['modules']:
-        
+    for m in module_definitions:
+        module = m['module']
         out_file = pathlib.Path(out_dir, module['c-filename'])
         
         # Start the comment.
@@ -156,6 +150,11 @@ def generate_c(api_definition, out_dir):
         
         out_str += format_c_comment_lines(module['description'])
         out_str += "*\n "
+
+        if 'notes' in module.keys():
+            for note in module['notes']:
+                out_str += format_c_comment_lines(note)
+                out_str += "*\n "
         
         out_str += format_c_comment_lines(api_definition['boilerplate'])
 

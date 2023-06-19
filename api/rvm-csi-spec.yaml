@@ -8,21 +8,7 @@ boilerplate: >
 adoc-optimization: pdf
 top-heading-level: 2
 modules:
-  - name: General-Purpose Definitions for use in CSI code
-    description: >
-      This file is included prior to all other headers and contains general-purpose definitions which
-      may be used by subsequent headers.
-    c-specific: true
-    c-filename: csi_defs.h
-    c-type-declarations:
-    - name: csi_status_t
-      description: Return type for functions indicating status 
-      type: enum
-      enum-members:
-      - name: CSI_SUCCESS
-        value: 0
-      - name: CSI_NOT_IMPLEMENTED
-        value: -1
-      - name: CSI_ERROR
-        value: -2
-
+  - csi_types-spec.yaml
+  - csi_ll-spec.yaml
+  - csi_hl_interrupt_sources-spec.yaml
+  - csi_hl_interrupts-spec.yaml

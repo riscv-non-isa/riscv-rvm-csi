@@ -22,35 +22,36 @@ To support the latter case, pre-processor directives that are intended to change
 All API functions shall be implemented in a way that supports simultaneous calls from multiple cores or software threads.
 This is supported through the use of an initialisation function which allocates a separate context space for each instance.
 
-=== Header File Structure
+=== Header Files
 
-Application writers will include a single header file, *rvm_csi.h*, in their code where they wish to include RVM-CSI functionality.
-This header is part of the API definition, and includes several further header files as follows:
+"Top-level" header files which would normally be included by application writers are indicated in bold in the table
+below.  Others listed here are included from the top-level ones.
 
 [cols="2,1,5",options="header"]
 |===
 |Header|Supplied by|Contents
-|csi_defs.h|API|Definitions which may be used by the BSP-supplied headers (such as return codes etc.)
-|csi_csrs.h|API|Standard CSR definitions, auto-generated from the RISC-V SAIL model
-|csi_bsp_csrs.h|BSP|Custom CSR definitions
-|csi_bsp_perip.h|BSP|Peripheral register definitions
-|csi_bsp_interrupts.h|BSP|Enumeration of interrupt sources in the system
-|csi_bsp_defs.h|BSP|Other macros supplied by the BSP, including macro definitions feeding into the inline functions within csi.h
-|csi.h|API|Defines the HAL API itself. This is included last as it picks up definitions from the other files.  Note that
-this header in turn includes other headers corresponding to different areas of functionality within the API.
+|csi_types.h|API|General-purpose definitions such as return codes, included from many other headers.
+|*csi_ll.h*|API|Low-level HAL API
+|csi_ll_csrs.h|API|Standard CSR definitions (auto-generated according to the RISC-V spec)
+|csi_ll_bsp_csrs.h|BSP|Custom CSR definitions
+|csi_ll_bsp_perip.h|BSP|Peripheral register definitions
+|csi_hl_interrupt_sources.h|API|Enumeration of standard interrupt sources
+|csi_hl_bsp_interrupts.h|BSP|Enumeration of platform-specific interrupt sources in the system
+|csi_ll_bsp_defs.h|BSP|Required macros to supplied by the BSP, picked up inline functions within API headers.
+|*csi_hl_interrupts.h*|API|High-level interrupt and timer API
 |===
 
 All header files must be protected against multiple inclusion, by means of a define which takes the form of a capitalised version
 of the file name, with special characters replaced by underscores.  For example a header file
-csi_bsp_csrs.h will have contents of the form:
+csi_ll_bsp_csrs.h will have contents of the form:
 [source, c]
 ----
-#ifndef CSI_BSP_CSRS_H
-#define CSI_BSP_CSRS_H
+#ifndef CSI_LL_BSP_CSRS_H
+#define CSI_LL_BSP_CSRS_H
 
 // ... file contents
 
-#endif // CSI_BSP_CSRS_H
+#endif // CSI_LL_BSP_CSRS_H
 ----
 
 === Definitions set by BSPs
@@ -61,40 +62,50 @@ The following macros must be defined by BSP authors and exposed in the specified
 
 Some modules within the API will require a context space allocated via an initialisation function.
 BSPs will publish macros defining the required size of each such context space in bytes, either
-in csi_bsp_defs.h or in the same header as the associated initialisation function.
+in csi_ll_bsp_defs.h or in the same header as the associated initialisation function.
 
 ==== CSRs (Control and Status Registers)
 
-Standard RISC-V CSRs are defined in https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h.
-However this is an internal file forming part of the Spike simulator; and such files cannot be treated as forming a
-public API; they are likely subject to backwards-incompatible changes.
+csi_ll_csrs.h lists indices and bitfield information for all the standard RISC-V CSRs.  This file will be
+auto-generated from the repo https://github.com/riscv/riscv-opcodes, which acts as a Single Source of Truth
+for this information.  Accordingly, the contents will align with 
+https://github.com/riscv-software-src/riscv-isa-sim/blob/master/riscv/encoding.h (which forms part of the
+spike simulator).
 
-Instead, the true "Source of Truth" for this information should be considered to be the RISC-V SAIL model.
-csi_csrs.h, forming part of the API, is auto-generated from the SAIL model (a version of which forms a submodule
-of the RVM-CSI specification repo).  This header file lists all standard CSR indeces and bit masks / shifts.
-In this file, CSR indeces are prefixed CSR_.  Bit shifts for fields within CSRs are prefixed CSR_SHIFT_, and
-masks for bitfields are prefixed CSR_MASK_.
-
-In addition, csi_bsp_csrs.h should enumerate all custom CSR names, addresses and bit-fields in a similar way.
-Custom CSR indeces are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and
+In addition, csi_ll_bsp_csrs.h should enumerate all custom CSR names, addresses and bit-fields in a similar way.
+Custom CSR indices are prefixed CCSR_.  Bit shifts for fields within custom CSRs are prefixed CCSR_SHIFT_, and
 masks for bitfields within custom CSRs are prefixed CCSR_MASK_.
 
 ==== Peripheral Registers
 
-csi_bsp_perip.h should publish macros listing all peripheral register names, addresses and bit-fields.
+csi_ll_bsp_perip.h should publish macros listing all peripheral register names, addresses and bit-fields.
 
 Peripheral register address definitions are prefixed PERIP_.  Shifts and masks for bit-fields within those
 registers are prefixed PERIP_SHIFT_ and PERIP_MASK_ respectively.
 
 ==== Interrupts
 
-csi_defs.h enumerates a set of standard interrupt sources, such as system timer, and hardware-generated exceptions.
+csi_hl_interrupt_sources.h enumerates a set of standard interrupt sources, such as system timer, and hardware-generated exceptions.
 
-csi_bsp_interrupts.h should enumerate all platform-specific interrupts in the system, giving them unique identification numbers
-that follow on from the interrupt numbers in csi_defs.h.
+csi_hl_bsp_interrupts.h should enumerate all platform-specific interrupts in the system, giving them unique identification numbers
+that follow on from the interrupt numbers in csi_hl_interrupt_sources.h.
 
 The numerical values of these enumerations bear no relationship to hardware; they are simply unique numbers assigned
 arbitrarily to the interrupt sources, allowing them to be indexed by the software.  The enumerations are prefixed INT_.
+
+csi_hl_bsp_interrupts.h should also define the following macros and types:
+
+[cols="4,2,6",options="header"]
+|===
+|Definition|Type|Purpose
+|CSI_MAX_INTERRUPT_PRIORITY|Macro|Number of of non-zero interrupt priorities available.
+|CSI_MAX_INTERRUPT_LEVEL|Macro|Number of non-zero interrupt levels available, or 0 if interrupt levels are not supported.
+|CSI_INTERRUPT_MCTX_MIN_SIZE_BYTES|Macro|Minimum size of M-mode context space for interrupt sub-system.
+|csi_timeout_t|struct|Context structure associated with a timeout.
+|===
+
+(Note: interrupt priorities determine the order in which simultaneous interrupts at a given privilege level are handled,
+while interrupt levels determine which interrupts can preempt others, if supported: see interrupts module for details).
 
 === Global Definitions Set By Application Writers
 
@@ -117,4 +128,7 @@ behaviour defaults to SEMIHOST, in which case behaviour is undefined if a semiho
 CSI_LOG_INFO.  See documentation of these macros for details.
 |===
 
-include::auto-gen/modules/csi_defs_h.adoc[]
+include::auto-gen/modules/csi_types_h.adoc[]
+include::auto-gen/modules/csi_ll_h.adoc[]
+include::auto-gen/modules/csi_hl_interrupt_sources_h.adoc[]
+include::auto-gen/modules/csi_hl_interrupts_h.adoc[]

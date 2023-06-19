@@ -1,0 +1,12 @@
+module:
+  name: Common header file describing CSI API.
+  c-specific: true
+  c-filename: csi.h
+  description: >
+    This header should not be included directly by users.  Rather, users include
+    <platform_name>.h, which is supplied by a Board Support Pack (BSP) for a specific
+    platform.  This in turn includes a series of platform-specific headers culminating
+    in this common one.
+  c-include-files:
+    - filename: csi_interrupts.h
+      system-header: false

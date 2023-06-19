@@ -1,0 +1,15 @@
+module:
+  name: Platform Discovery
+  description: Functions for discovery of platform characteristics
+  c-specific: false
+  c-filename: csi_discovery.h
+  c-type-declarations:
+  - name: csi_timer_count_t
+    type: unsigned
+    description: An example of an unsigned type definition
+  functions:
+    - name: csi_get_cpu_clk_freq
+      description: Returns CPU clock frequency in Hz.
+      c-return-value: 
+        description: clock frequency in Hz
+        type: const unsigned

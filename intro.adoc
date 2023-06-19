@@ -1,28 +1,30 @@
 [[intro]]
 == Introduction
 
-RVM-CSI (Risc-V eMbedded - Common Software Interface) has been defined with the aim of facilitating the portability
-of source code across different embedded platforms.
+RVM-CSI (Risc-V Microcontrollers - Common Software Interface) has been defined with the aim of facilitating the portability
+of source code across different embedded microcontroller platforms.
 
-RVM refers to a class of _platforms_ and _profiles_ which RISC-V International intends to define.  A _profile_ defines a
-specific base ISA, plus ISA extensions and any options applicable within those ISA extensions.  A _platform_ comprises
+RVM refers to a class of _platforms_ and _profiles_ which RISC-V International intends to define. A profile defines
+a specific base ISA, plus ISA extensions and any options applicable within those ISA extensions. A platform comprises
 a profile plus further specifications for non-ISA features (such as interrupt controllers etc.).
 
-Although no RVM platform or profile has yet been specified at time of writing, the initial specification of RVM-CSI
-will have no dependency on certain features being present in the platform (beyond the base ISA).  Any run-time
-functionality that depends on certain hardware characteristics can either a) report the absence of the required
-functionality and hence be non-functional, or b) emulate the required functionality in software.
+One possible motivation behind defining these profiles and platforms is to constrain the features of a RISC-V
+platform in order to make it easier to write software that is portable between platforms. This is most important in
+the application processor space, where binary distributions need to be created that will work on platforms from
+multiple vendors. Hence most focus in this area has been on the RVA (application processor) platforms.
 
-Therefore, a single Common Software Interface should serve to cover all defined RVM platforms going forward.
+In the microcontroller space, the definition of profiles and platforms is not motivated by binary software portability.
+Rather, since we assume that software will be built for a specific platform, we can deal with the problem
+of software portability by creating a software layer that abstracts the features of the platform. Hence the motivation
+behind RVM-CSI.
 
 In constructing systems for RVM platforms, we assume the following:
 
 * The software is built for a specific platform (i.e., platform characteristics are known at build time).
-* The software is not using a rich OS such as linux (which would have its own standardised methods for control of
-the platform and discovery of its characteristics).
+* The software is not using a rich OS such as Linux (which would have its own standardized methods for control
+of the platform and discovery of its characteristics).
 
-This contrasts with the RVA platforms for application processors, where there is a requirement for _binary_ portability
-of software between platforms (which in turn implies run-time discovery of platform characteristics).
+It is important to note that a platform does not need to conform to a defined RVM platform in order to support RVM-CSI.
 
 Most importantly, RVM-CSI Specifies:
 
@@ -30,6 +32,10 @@ Most importantly, RVM-CSI Specifies:
 _Board Support Packs_ (BSPs) conforming to this API, and application writers can write their code against the interface
 in order to create portable code.
 * The format of Board Support Packs.
+
+The API aims to have no dependency on certain features being present in the platform (beyond the base ISA).  Any run-time
+functionality that depends on certain hardware characteristics can either a) report the absence of the required
+functionality and hence be non-functional, or b) emulate the required functionality in software.
 
 While the first version of the specification deals with a C language API, future enhancements may encompass other
 languages.  Implementations in different languages will share common function names and descriptions wherever possible.
@@ -44,3 +50,55 @@ indexterm:[Application Writers]
 functionality in the API. (This could also be implemented within a language runtime). indexterm:[Board Support Pack]
 indexterm:[BSP]
 
+=== Assumed Features of Underlying Hardware
+
+==== Privilege Levels
+
+We assume that systems targeted by RVM-CSI will require either Machine-mode only, or Machine mode + User mode.
+No functionality is provided to target Hypervisor, Supervisor or VS privilege modes.
+
+==== Virtual Memory
+
+RVM-CSI does not support virtual addressing.
+
+== HAL APIs Overview
+
+RVM-CSI supplies run-time APIs for general-purpose hardware abstraction on 3 complimentary levels:
+
+* *Low-level* (file prefix: csi_ll_): These APIs will wrap specific pieces of hardware within a RISC-V platform,
+providing a convenient way to control that hardware from a high-level language. The hardware covered may include
+both standard aspects of a RISC-V core and peripherals. The APIs should aim to offer access to all the
+functionality within the hardware itself. They will not always be portable to other implementations of the same
+class of hardware.
+* *Driver-level* (file prefix: csi_dl_): These will be platform-agnostic APIs aiming to offer functionality that
+requires interaction with hardware peripherals; specified in a way that abstracts the implementation details of
+the actual peripherals present in the platform. These APIs should be designed with a focus on creating peripheral
+drivers that will work across multiple different RISC-V platforms; including drivers for an RTOS.
+Driver-level APIs will typically use the low-level APIs in their implementation.
+* *High-level* (file prefix: csi_hl_): These will be APIs at a higher level of abstraction offering a more convenient
+way for a user application to interact with platform hardware, particularly aimed at bare-metal systems or systems
+with a very thin OS such as FreeRTOS.  High-level APIs will typically use both driver-level and low-level APIs
+in their implementation.  The functionality offered here may overlap with that offered by some operating systems.
+
+The APIs on these 3 levels are not software _layers_: they are offered as modules that can be optionally combined
+in any way desired.
+
+All of the code underneath these RVM-CSI APIs is considered to be platform-specific, and would typically be
+provided as a Board Support Package (BSP) by a platform vendor. However in practice, much of the code, particularly
+at driver-level and high-level, can be formed from common code with a few build-time options to tailor its behaviour
+to the platform. This makes implementation of a BSP for a new platform much easier. The use of the low-level API
+to provide platform-specific information (such as addresses) to the driver-level code in a standard form helps
+to facilitate this.
+
+In systems that use an OS, the RVM-CSI APIs are designed to sit "underneath" the OS or are otherwise complimentary
+to it.  There is no intention to abstract the functionality of the OS itself.
+
+The following diagram illustrate how these APIs might fit within a user application which makes use of an RTOS:
+
+.RVM-CSI Used with an RTOS
+image::RVM-CSI_with_RTOS.png[]
+
+The following diagram illustrates how a bare-metal application might make use of these APIs:
+
+.RVM-CSI Used with a Bare-Metal Application
+image::RVM-CSI_Bare-Metal.png[]

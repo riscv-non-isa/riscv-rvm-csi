@@ -1,0 +1,270 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "JSON schema for YAML files describing modules within the RVM-CSI Specification",
+    "description": "YAML files conforming to this schema form a Single Source of Truth for the definition of a code module, from which multiple language implementations of the module, and its documentation, may be derived",
+    "type": "object",
+    "definitions": {
+      "note": {
+        "description": "General-purpose note text",
+        "type": "string"
+      },
+      "c-specific-note": {
+        "description": "Note text specific to the C implementation",
+        "type": "string"
+      },
+      "c-function-param": {
+        "description": "C function parameter",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name","description","type"],
+        "properties": {
+          "name": {
+            "description": "C-specific function parameter name",
+            "type": "string"
+          },
+          "description": {
+            "description": "C-specific function parameter description",
+            "type": "string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/note"
+            }
+          },
+          "type": {
+            "description": "C function parameter type",
+            "type": "string"
+          }
+        }
+      },
+      "c-function-return-value": {
+        "description": "Value returned by C function",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "type"],
+        "properties": {
+          "description": {
+            "description": "C-specific function return value description",
+            "type": "string"
+          },
+          "type": {
+            "description": "Return type",
+            "type": "string"
+          }
+        }
+      },
+      "function": {
+        "description": "Language-independent function description",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name","description"],
+        "properties": {
+          "name": {
+            "description": "Function name (common across language implementations)",
+            "type": "string"
+          },
+          "description": {
+            "description": "Function description",
+            "type": "string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/note"
+            }
+          },
+          "c-specific-notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-specific-note"
+            }
+          },
+          "c-params": {
+            "description": "C function parameter list (note the list may be absent, in which case there is a single void parameter)",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-function-param"
+            }
+          },
+          "c-return-value": {
+            "description": "C function return type",
+            "type": "object",
+            "items":  {
+              "$ref": "#/definitions/c-function-return-value"
+            }
+          }
+        }
+      },
+      "c-type": {
+        "description": "C type",
+        "type": "string",
+        "enum": ["struct", "enum", "int", "unsigned", "function"]
+      },
+      "c-type-prefix": {
+        "description": "C type prefix (const, static, inline etc.)",
+        "type": "string",
+        "enum": ["const", "static", "volatile", "inline"]
+      },
+      "c-struct-member": {
+        "description": "Member of a C structure",
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": {
+            "description": "C structure member variable name",
+            "type": "string"
+          },
+          "type": {
+            "description": "C structure member variable type",
+            "type": "string"
+          }
+        }
+      },
+      "c-enum-entry": {
+        "description": "Member of a C enum",
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "C enum member name",
+            "type": "string"
+          },
+          "value": {
+            "description": "C enum member value",
+            "type": "integer"
+          },
+          "description": {
+            "description": "Enumerated value description",
+            "type": "string"
+          }
+        }
+      },
+      "c-type-declaration": {
+        "description": "C type declaration",
+        "type": "object",
+        "required": ["name", "type", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "C type name",
+            "type": "string"
+          },
+          "description": {
+            "description": "Type declaration description",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/definitions/c-type"
+          },
+          "type-prefixes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-type-prefix"
+            }
+          },
+          "struct-members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-struct-member"
+            }
+          },
+          "enum-members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-enum-entry"
+            }
+          },
+          "func-typedef-retval": {
+            "description": "Function return value for typedef",
+            "type": "string"
+          },
+          "func-typedef-params": {
+            "description": "Function parameter list for typedef (note the list may be absent, in which case there is a single void parameter)",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-function-param"
+            }
+          }
+        }
+      },
+      "c-include-file": {
+        "description": "C include file",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["filename", "system-header"],
+        "properties": {
+          "filename": {
+            "description": "Include file name",
+            "type": "string"
+          },
+          "system-header": {
+            "description": "True for system headers, false for custom ones",
+            "type": "boolean"
+          }
+        }
+      },
+      "module": {
+        "description": "The API may be divided into modules, each covering a different functional area.  Modules may also equate to files.  A module without functions is permissible, for example to create a top-level header file.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name","description"],
+        "properties": {
+          "name": {
+            "description": "Module name",
+            "type": "string"
+          },
+          "description": {
+            "description": "Module description",
+            "type": "string"
+          },
+          "c-specific": {
+            "description": "Set true if the module is unique to the C implementation",
+            "type": "boolean"
+          },
+          "c-filename": {
+            "description": "C filename for this module",
+            "type": "string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/note"
+            }
+          },
+          "c-specific-notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-specific-note"
+            }
+          },
+          "c-include-files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-include-file"
+            }
+          },
+          "c-type-declarations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-type-declaration"
+            }
+          },
+          "functions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/function"
+            }
+          }
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": ["module"],
+    "properties": {
+      "module": {
+          "$ref": "#/definitions/module"
+      }
+    }
+}

@@ -36,7 +36,7 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= RVM-CSI (Risc-V eMbedded - Common Software Interface) Specification Document
+= RVM-CSI (Risc-V Microcontrollers - Common Software Interface) Specification Document
 RISC-V RVM-CSI Version 1 Specification Task Group
 
 // Preamble

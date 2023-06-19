@@ -1,0 +1,49 @@
+module:
+  name: General-Purpose Definitions for use in CSI code
+  description: >
+    This file is included prior to all other headers and just contains general-purpose definitions.
+  c-specific: true
+  c-filename: csi_defs.h
+  c-type-declarations:
+  - name: csi_status_t
+    description: An example of a enumeration definition with assigned values 
+    type: enum
+    enum-members:
+    - name: CSI_SUCCESS
+      value: 0
+    - name: CSI_NOT_IMPLEMENTED
+      value: -1
+    - name: CSI_ERROR
+      value: -2
+  - name: csi_check_t
+    type: enum
+    description: An example of a enumeration definition
+    enum-members:
+    - name: CSI_SUCCESS
+    - name: CSI_NOT_IMPLEMENTED
+    - name: CSI_ERROR
+  - name: csi_timer_count_t
+    description: An example of an unsigned definition
+    type: unsigned  
+  - name: csi_dummy_t
+    type: struct
+    description: An example of a structure definition
+    struct-members:
+        - name: a
+          type: unsigned *
+        - name: b
+          type: uint32_t
+        - name: memory
+          type: csi_memory_t *
+        - name: status
+          type: csi_status_t *
+  functions:
+      - name: csi_set_status
+        description: Set some arbitrary status
+        c-params:
+        - name: isr
+          description: Status to set
+          type: csi_status_t
+        c-return-value: 
+          description: Not applicable
+          type: void
