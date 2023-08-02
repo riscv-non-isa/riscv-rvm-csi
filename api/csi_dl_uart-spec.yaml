@@ -1,0 +1,451 @@
+module:
+  name: UART Support
+  description: >
+    Control of UART (Universal Asynchronous Receiver/Transmitter) or similar communications devices.
+  notes:
+    - >
+      In hardware terminology, Synchronous / Asynchronous refers to whether a clock is transmitted with the data.
+      In software terminology, the same terms are used to refer to whether a function waits for completion of
+      a transmission or reception of data.  In the following text, the software terminolgy is used.
+  c-specific: false
+  c-filename: csi_dl_uart.h
+  c-include-files:
+  - filename: csi_dl_bsp_uart.h
+    system-header: false
+  - filename: csi_types.h
+    system-header: false
+  - filename: stdint.h
+    system-header: true
+
+  c-type-declarations:
+  - name: csi_register_isr_wrapper_t
+    description: >
+      Function prototype for a generic function used to register an ISR (Interrupt Service Routine).  In systems
+      that use the RVM-CSI high-level interrupt subsystem, this will be implemented by csi_register_m_isr.
+    type: function
+    func-typedef-retval: csi_status_t
+    func-typedef-params:
+    - name: irq_system_ctx
+      description: >
+        Context pointer for the interrupt subsystem.
+      type: void *
+    - name: isr
+      description: >
+        Pointer to handler function implementing the ISR; or NULL pointer to un-register a handler.
+        The handler function should be a normal function without the interrupt compiler attribute applied:
+        i.e. it is intended to be called from a base trap handler, not vectored-to directly.
+      type: csi_isr_t *
+    - name: isr_ctx
+      description: >
+        Pointer to the user's context.  This will be passed into the handler function when called.
+      type: void *
+    - name: irq_source
+      description: >
+        Enumeration of the interrupt source.
+      type: int
+  - name: csi_uart_data_bits_t
+    description: Number of data bits in UART Tx / Rx packet
+    type: enum
+    enum-members:
+    - name: UART_DATA_BITS_5
+      description: 5 data bits
+    - name: UART_DATA_BITS_6
+      description: 6 data bits
+    - name: UART_DATA_BITS_7
+      description: 7 data bits
+    - name: UART_DATA_BITS_8
+      description: 8 data bits
+    - name: UART_DATA_BITS_9
+      description: 9 data bits
+  - name: csi_uart_parity_t
+    description: UART parity configuration
+    type: enum
+    enum-members:
+    - name: UART_PARITY_NONE
+      description: No parity bit
+    - name: UART_PARITY_EVEN
+      description: Even parity
+    - name: UART_PARITY_ODD
+      description: Odd parity
+  - name: csi_uart_stop_bits_t
+    description: Number of stop bits in UART Tx / Rx packet
+    type: enum
+    enum-members:
+    - name: UART_STOP_BITS_1
+      description: 1 stop bit
+    - name: UART_STOP_BITS_2
+      description: 2 stop bits
+    - name: UART_STOP_BITS_1_5
+      description: 1.5 stop bits
+  - name: csi_uart_flowctrl_t
+    description: UART flow control mode.
+    type: enum
+    enum-members:
+    - name: UART_FLOWCTRL_NONE
+      description: No throttling
+    - name: UART_FLOWCTRL_RTS
+      description: Ready To Send mode
+    - name: UART_FLOWCTRL_CTS
+      description: Clear To Send mode
+    - name: UART_FLOWCTRL_RTS_CTS
+      description: Both Ready To Send and Clear To Send operative
+  - name: csi_uart_event_t
+    description: UART event.
+    type: enum
+    enum-members:
+    - name: UART_EVENT_SEND_COMPLETE
+      description: Data sending complete
+    - name: UART_EVENT_RECEIVE_COMPLETE
+      description: Data reception complete
+    - name: UART_EVENT_RECEIVE_FIFO_READABLE
+      description: Data available in UART Rx FIFO
+    - name: UART_EVENT_BREAK_INTR
+      description: Data reception interrupted (break signal from sender)
+    - name: UART_EVENT_ERROR_OVERFLOW
+      description: Data receive FIFO overflowed
+    - name: UART_EVENT_ERROR_PARITY
+      description: Data reception parity error
+    - name: UART_EVENT_ERROR_FRAMING
+      description: Framing error (no effective stop bit)
+    - name: UART_EVENT_TX_ABORT
+      description: Transmission aborted by calling csi_uart_stop_tx
+    - name: UART_EVENT_RX_ABORT
+      description: Reception aborted by calling csi_uart_stop_rx
+  - name: csi_uart_callback_t
+    description: >
+      Function prototype for user's callback function to be run by the UART driver on UART events.
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: callback_ctx
+      description: >
+        Context pointer that was passed into csi_uart_register_callback.
+      type: void *
+    - name: event
+      description: Event giving rise to the callback.
+      type: csi_uart_event_t
+    - name: bytes_transferred
+      description: number of bytes of transfer completed up to this point.
+      type: unsigned
+  - name: csi_uart_state_t
+    description: Structure of information concerning UART state
+    type: struct
+    struct-members:
+        - name: readable
+          type: bool
+        - name: writable
+          type: bool
+        - name: overrun_error
+          type: bool
+        - name: parity_error
+          type: bool
+        - name: framing_error
+          type: bool
+        - name: tx_fifo_empty
+          type: bool
+
+  functions:
+  - name: csi_uart_init
+    description: >
+      Initialize a UART driver instance and associate it with a physical channel.  This function must be
+      called before calling any other functions in this module.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance: initialized by this function call.  The structure
+        declaration csi_uart_t is published by the BSP in csi_hl_bsp_interrupts.h but should be considered
+        private to the BSP.  Application code instantiates this structure and passes in a pointer to it.
+      type: csi_uart_t *
+    - name: idx
+      description: >
+        Index of the UART, starting at 0 for the first-numbered device in the system.  The BSP may publish
+        macros giving meaningful names to UART instances.
+      type: unsigned
+    - name: irq_reg_fn
+      description: >
+        Pointer to a function that the BSP code can use to register an interrupt handler to support asynchronous
+        callbacks.  May be NULL in which case asynchronous UART functions are not supported.
+      type: csi_register_isr_wrapper_t *
+    - name: irq_system_ctx
+      description: >
+        Context pointer for the interrupt subsystem, to pass into irq_reg_fn.
+        May be NULL in which case asynchronous UART functions are not supported.
+      type: void *
+    - name: source
+      description: >
+        Enumeration of the interrupt source, to be passed into irq_reg_fn.  The user must select the appropriate
+        value to select the interrupt associated with the UART being initialized.
+        Unused if irq_reg_fn and / or irq_system_ctx are NULL.
+      type: int
+    - name: wait_fn
+      description: Pointer to a function that the BSP should call to implement a wait while polling.
+      type: csi_poll_wait_wrapper_t *
+    c-return-value:
+      description: Status of initialisation operation
+      type: csi_status_t
+  - name: csi_uart_uninit
+    description: >
+      Uninitialize a UART driver instance and free associated context space.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Status of uninitialisation operation
+      type: csi_status_t
+  - name: csi_uart_baud
+    description: Set UART baud rate (symbols per second)
+    notes:
+    - If this function is never called, the rate defaults to 115200 baud.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: baud
+      description: Baud rate
+      type: unsigned
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_format
+    description: Set UART data Tx/Rx format.
+    notes:
+    - If this function is never called, the format defaults to 8 data bits, no parity, 1 stop bit.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data_bits
+      description: Number of data bits in a packet
+      type: csi_uart_data_bits_t
+    - name: parity
+      description: Parity configuration
+      type: csi_uart_parity_t
+    - name: stop_bits
+      description: Number of stop bits in a packet
+      type: csi_uart_stop_bits_t
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_flowctrl
+    description: Set UART flow control (throttling) mode.
+    notes:
+    - If this function is never called, the default is to use no flow control.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: flowctrl
+      description: Flow control mode
+      type: csi_uart_flowctrl_t
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_register_callback
+    description: >
+      Register or unregister a callback function to respond to UART events.  This function
+      must be called prior to sending or receiving data in asynchronous mode, but need not be called
+      if only synchronous operation is required.  This function will fail and return CSI_ERROR
+      if a NULL value for the irq_reg_fn parameter was passed to csi_uart_init.
+    notes:
+    - After registering a callback, it will be called to flag UART_EVENT_RECEIVE_FIFO_READABLE
+      when any data is received.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: callback
+      description: >
+        User's callback function.  Passing NULL for this parameter will unregister
+        any previously registered handler.
+      type: csi_uart_callback_t *
+    - name: callback_ctx
+      description: >
+        User's context pointer which will be passed into the callback function when it is run.
+      type: void *
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_send
+    description: >
+      Send data via UART in synchronous mode.  This function will block until the data has been sent,
+      or until the specified timeout is exceeded, during which time it will poll, repeatedly calling the
+      wait function passed as the wait_fn argument into csi_uart_init.  Synchronous mode can
+      be used in the case where the irq_reg_fn argument to csi_uart_init was set to NULL, and where
+      no callback function has been registered (with csi_uart_register_callback).
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data
+      description: Addess of buffer of data to send.  Data will be transmitted in byte order.
+      type: void *
+    - name: size_bytes
+      description: Data length in bytes to send.
+      type: unsigned
+    - name: timeout
+      description: >
+        Timeout for sending a single byte of data, in ms.  If this timeout is exceeded then data send
+        will be aborted and the function will return, but this does not constitute an error.
+      type: unsigned
+    c-return-value:
+      description: Returns the number of bytes sent, or an error code from csi_status_t.
+      type: int
+  - name: csi_uart_send_async
+    description: >
+      Send data via UART in asynchronous mode.  Prior to using this function, a callback handler
+      must have been registered using csi_uart_register_callback. This function will return immediately
+      without blocking; completion (or failure) of the transmission will be signalled via the user's
+      callback function.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data
+      description: Addess of buffer of data to send.  Data will be transmitted in byte order.
+      type: void *
+    - name: size_bytes
+      description: Data length in bytes to send.
+      type: unsigned
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_receive
+    description: >
+      Receive data from UART in synchronous mode.  This function will block until the requested length
+      of data has been received, or until the specified timeout is exceeded, during which time it may
+      poll, repeatedly calling the wait function passed as the wait_fn argument into csi_uart_init.
+      Synchronous mode can be used in the case where the irq_reg_fn argument to csi_uart_init was set
+      to NULL, and where no callback function has been registered (with csi_uart_register_callback).
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data
+      description: Addess of buffer for data receiption.  Received data will be filled in byte order.
+      type: void *
+    - name: size_bytes
+      description: Data length in bytes to receive.
+      type: unsigned
+    - name: timeout
+      description: >
+        Timeout for receiving a single byte of data, in ms.   If this timeout is exceeded then data reception
+        will be aborted and the function will return, but this does not constitute an error.
+      type: unsigned
+    c-return-value:
+      description: Returns the number of bytes received, or an error code from csi_status_t.
+      type: int
+  - name: csi_uart_receive_async
+    description: >
+      Receive data from UART in asynchronous mode.  Prior to using this function, a callback handler
+      must have been registered using csi_uart_register_callback. This function will return immediately
+      without blocking; completion (or failure) of data reception will be signalled via the user's
+      callback function.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data
+      description: Addess of buffer for data receiption.  Received data will be filled in byte order.
+      type: void *
+    - name: size_bytes
+      description: Data length in bytes to receive.
+      type: unsigned
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_getc
+    description: >
+      Read a single byte from UART.  If the UART receive FIFO is empty, this function will block and
+      poll (repeatedly calling the wait function passed as the wait_fn argument into csi_uart_init) until a
+      character is received.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Received data byte
+      type: uint8_t
+  - name: csi_uart_putc
+    description: >
+      Transmit a single byte via UART. If the UART transmit FIFO is full, this function will block and
+      poll (repeatedly calling the wait function passed as the wait_fn argument into csi_uart_init) until
+      the byte can be transmitted.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    - name: data
+      description: data byte to send
+      type: uint8_t
+  - name: csi_uart_stop_tx
+    description: Cancel any in-progress transmission in asynchronous mode.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_stop_rx
+    description: Cancel any in-progress reception in asynchronous mode.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_get_state
+    description: Get UART state information
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      notes:
+      - After filling the state structure, this function will reset all error flags
+        in the hardware.
+      type: csi_uart_t *
+    - name: state
+      description: Pointer to structure to be filled with state information
+      type: csi_uart_state_t *
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_throttle_rx
+    description: >
+      Throttle any in-progress reception (normally by setting CTS inactive).
+      This should be called only if hardware flow control has been enabled.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Status code
+      type: csi_status_t
+  - name: csi_uart_unthrottle_rx
+    description: >
+      Un-throttle any in-progress reception (normally by setting CTS active).
+      This should be called only if hardware flow control has been enabled.
+    c-params:
+    - name: uart
+      description: >
+        Context structure for this driver instance, as passed into csi_uart_init.
+      type: csi_uart_t *
+    c-return-value:
+      description: Status code
+      type: csi_status_t

@@ -34,12 +34,11 @@ OPTIONS := --trace \
            -a pdf-style=docs-resources/themes/riscv-pdf.yml \
            --failure-level=ERROR
 REQUIRES := --require=asciidoctor-bibtex \
-            --require=asciidoctor-diagram \
-            --require=asciidoctor-mathematical
+            --require=asciidoctor-diagram
 
 .PHONY: all build clean build-container build-no-container generate-code-from-yaml
 
-all: generate-code-from-yaml build
+all: build
 
 build: 
 	@echo "Checking if Docker is available..."
@@ -51,18 +50,19 @@ build:
 		$(MAKE) build-no-container; \
 	fi
 
-generate-code-from-yaml:
-	@echo "Auto-generating docs and code from YAML"
+build-container:
 	docker build -t spec-schema:latest -f ./spec-schema/Dockerfile ./spec-schema
+	@echo "Auto-generating docs and code from YAML"
 	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)"
 	docker run --rm -v $(shell pwd):/app spec-schema:latest /bin/sh  -c "python ./spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)"
-
-build-container:
 	@echo "Starting build inside Docker container..."
 	$(DOCKER_RUN) /bin/sh -c "$(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) --out-file=$(PDF_RESULT) $(HEADER_SOURCE)"
 	@echo "Build completed successfully inside Docker container."
 
 build-no-container:
+	@echo "Auto-generating docs and code from YAML"
+	python3 spec-schema/parser/csi_parser.py --generate-docs $(SSOT_YAML) --doc-out-dir=$(DOCS_OUT_DIR)
+	python3 spec-schema/parser/csi_parser.py $(SSOT_YAML) --out-dir=$(CODE_OUT_DIR)
 	@echo "Starting build..."
 	$(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) --out-file=$(PDF_RESULT) $(HEADER_SOURCE)
 	@echo "Build completed successfully."
