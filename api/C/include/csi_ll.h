@@ -11,6 +11,7 @@
 #define CSI_LL_H
 
 #include "csi_types.h"
+#include <stdint.h>
 
 /*
  * Interrupt enable bits in the mie CSR

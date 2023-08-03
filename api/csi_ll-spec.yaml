@@ -7,6 +7,8 @@ module:
   c-include-files:
   - filename: csi_types.h
     system-header: false
+  - filename: stdint.h
+    system-header: true
   c-type-declarations:
   - name: csi_interrupt_enables_t
     description: Interrupt enable bits in the mie CSR
