@@ -284,7 +284,7 @@ module:
         Context structure for this driver instance, as passed into csi_uart_init.
       type: csi_uart_t *
     - name: data
-      description: Addess of buffer of data to send.  Data will be transmitted in byte order.
+      description: Address of buffer of data to send.  Data will be transmitted in byte order.
       type: void *
     - name: size_bytes
       description: Data length in bytes to send.
@@ -309,7 +309,7 @@ module:
         Context structure for this driver instance, as passed into csi_uart_init.
       type: csi_uart_t *
     - name: data
-      description: Addess of buffer of data to send.  Data will be transmitted in byte order.
+      description: Address of buffer of data to send.  Data will be transmitted in byte order.
       type: void *
     - name: size_bytes
       description: Data length in bytes to send.
@@ -330,7 +330,7 @@ module:
         Context structure for this driver instance, as passed into csi_uart_init.
       type: csi_uart_t *
     - name: data
-      description: Addess of buffer for data receiption.  Received data will be filled in byte order.
+      description: Address of buffer for data receiption.  Received data will be filled in byte order.
       type: void *
     - name: size_bytes
       description: Data length in bytes to receive.
@@ -355,7 +355,7 @@ module:
         Context structure for this driver instance, as passed into csi_uart_init.
       type: csi_uart_t *
     - name: data
-      description: Addess of buffer for data receiption.  Received data will be filled in byte order.
+      description: Address of buffer for data receiption.  Received data will be filled in byte order.
       type: void *
     - name: size_bytes
       description: Data length in bytes to receive.

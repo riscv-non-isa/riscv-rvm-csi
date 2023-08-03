@@ -220,8 +220,8 @@ csi_status_t csi_uart_register_callback(csi_uart_t *uart, csi_uart_callback_t *c
  *
  * @param uart: Context structure for this driver instance, as passed into
  * csi_uart_init.
- * @param data: Addess of buffer of data to send.  Data will be transmitted in byte
- * order.
+ * @param data: Address of buffer of data to send.  Data will be transmitted in
+ * byte order.
  * @param size_bytes: Data length in bytes to send.
  * @param timeout: Timeout for sending a single byte of data, in ms.  If this
  * timeout is exceeded then data send will be aborted and the function will return,
@@ -238,8 +238,8 @@ int csi_uart_send(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned ti
  *
  * @param uart: Context structure for this driver instance, as passed into
  * csi_uart_init.
- * @param data: Addess of buffer of data to send.  Data will be transmitted in byte
- * order.
+ * @param data: Address of buffer of data to send.  Data will be transmitted in
+ * byte order.
  * @param size_bytes: Data length in bytes to send.
  * @return : Status code
  */
@@ -256,8 +256,8 @@ csi_status_t csi_uart_send_async(csi_uart_t *uart, void *data, unsigned size_byt
  *
  * @param uart: Context structure for this driver instance, as passed into
  * csi_uart_init.
- * @param data: Addess of buffer for data receiption.  Received data will be filled
- * in byte order.
+ * @param data: Address of buffer for data receiption.  Received data will be
+ * filled in byte order.
  * @param size_bytes: Data length in bytes to receive.
  * @param timeout: Timeout for receiving a single byte of data, in ms.   If this
  * timeout is exceeded then data reception will be aborted and the function will
@@ -275,8 +275,8 @@ int csi_uart_receive(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned
  *
  * @param uart: Context structure for this driver instance, as passed into
  * csi_uart_init.
- * @param data: Addess of buffer for data receiption.  Received data will be filled
- * in byte order.
+ * @param data: Address of buffer for data receiption.  Received data will be
+ * filled in byte order.
  * @param size_bytes: Data length in bytes to receive.
  * @return : Status code
  */

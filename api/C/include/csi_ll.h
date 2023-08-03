@@ -36,7 +36,7 @@ typedef enum {
  * into another call to csi_ll_set_interrupt_enables in order to restore the
  * previous interrupt enables state.
  */
-unsigned csi_ll_set_interrupt_enables(unsigned int_enables);
+unsigned long csi_ll_set_interrupt_enables(unsigned long int_enables);
 
 /*
  * Set the frequency of the system timer.  Note that there is typically a single
@@ -61,14 +61,14 @@ csi_status_t csi_timer_config(unsigned timer_freq_mhz);
  *
  * @return : Current timer value
  */
-long long csi_read_mtime(void);
+uint64_t csi_read_mtime(void);
 
 /*
  * Get the system timer frequency as configured by csi_timer_config.
  *
  * @return : System timer frequency in Hz
  */
-long long csi_get_timer_freq(void);
+unsigned csi_get_timer_freq(void);
 
 
 #endif /* CSI_LL_H */ 

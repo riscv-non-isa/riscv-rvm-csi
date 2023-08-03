@@ -31,13 +31,13 @@ module:
         timer interrupts and external interrupts are enabled.  To enable all 3 classes of interrupts,
         pass a value of CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE | CSI_EXT_INTERRUPTS_ENABLE.  To
         disable all interrupts, pass a value of 0.
-      type: unsigned
+      type: unsigned long
     c-return-value:
       description: >
         Integer in the same format as int_enables, reflecting the previous value of int_enables prior to the
         change.  This may be stored and passed back into another call to csi_ll_set_interrupt_enables in order
         to restore the previous interrupt enables state.
-      type: unsigned
+      type: unsigned long
   - name: csi_timer_config
     description: >
       Set the frequency of the system timer.  Note that there is typically a single timer for all
@@ -62,9 +62,9 @@ module:
       delay incurred by this.
     c-return-value:
       description: Current timer value
-      type: long long
+      type: uint64_t
   - name: csi_get_timer_freq
     description: Get the system timer frequency as configured by csi_timer_config.
     c-return-value:
       description: System timer frequency in Hz
-      type: long long
+      type: unsigned
