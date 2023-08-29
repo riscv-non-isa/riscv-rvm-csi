@@ -296,7 +296,7 @@ module:
       type: unsigned
     c-return-value:
       description: Returns the number of bytes sent, or an error code from csi_status_t.
-      type: int
+      type: long
   - name: csi_uart_send_async
     description: >
       Send data via UART in asynchronous mode.  Prior to using this function, a callback handler
@@ -342,7 +342,7 @@ module:
       type: unsigned
     c-return-value:
       description: Returns the number of bytes received, or an error code from csi_status_t.
-      type: int
+      type: long
   - name: csi_uart_receive_async
     description: >
       Receive data from UART in asynchronous mode.  Prior to using this function, a callback handler

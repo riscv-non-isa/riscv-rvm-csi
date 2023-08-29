@@ -48,10 +48,10 @@ module:
       in order to produce a regular timer interrupt at a tick rate configured using csi_set_timer_tick, which
       is used for timing purposes.  This function must run in machine mode.
     c-params:
-    - name: timer_freq_mhz
+    - name: timer_freq_hz
       description: >
-        System timer frequency in MHz
-      type: unsigned
+        System timer frequency in Hz
+      type: unsigned long
     c-return-value:
       description: >
         Status of operation.  CSI_ERROR will be returned if the request is invalid.
@@ -69,4 +69,4 @@ module:
     description: Get the system timer frequency as configured by csi_timer_config.
     c-return-value:
       description: System timer frequency in Hz
-      type: unsigned
+      type: unsigned long

@@ -48,11 +48,11 @@ unsigned long csi_ll_set_interrupt_enables(unsigned long int_enables);
  * csi_set_timer_tick, which is used for timing purposes.  This function must run
  * in machine mode.
  *
- * @param timer_freq_mhz: System timer frequency in MHz
+ * @param timer_freq_hz: System timer frequency in Hz
  * @return : Status of operation.  CSI_ERROR will be returned if the request is
  * invalid.
  */
-csi_status_t csi_timer_config(unsigned timer_freq_mhz);
+csi_status_t csi_timer_config(unsigned long timer_freq_hz);
 
 /*
  * Read the current timer value.  This function can be called from M-mode or
@@ -69,7 +69,7 @@ uint64_t csi_read_mtime(void);
  *
  * @return : System timer frequency in Hz
  */
-unsigned csi_get_timer_freq(void);
+unsigned long csi_get_timer_freq(void);
 
 
 #endif /* CSI_LL_H */ 

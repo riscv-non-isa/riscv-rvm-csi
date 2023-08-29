@@ -228,7 +228,7 @@ csi_status_t csi_uart_register_callback(csi_uart_t *uart, csi_uart_callback_t *c
  * but this does not constitute an error.
  * @return : Returns the number of bytes sent, or an error code from csi_status_t.
  */
-int csi_uart_send(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned timeout);
+long csi_uart_send(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned timeout);
 
 /*
  * Send data via UART in asynchronous mode.  Prior to using this function, a
@@ -265,7 +265,7 @@ csi_status_t csi_uart_send_async(csi_uart_t *uart, void *data, unsigned size_byt
  * @return : Returns the number of bytes received, or an error code from
  * csi_status_t.
  */
-int csi_uart_receive(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned timeout);
+long csi_uart_receive(csi_uart_t *uart, void *data, unsigned size_bytes, unsigned timeout);
 
 /*
  * Receive data from UART in asynchronous mode.  Prior to using this function, a
