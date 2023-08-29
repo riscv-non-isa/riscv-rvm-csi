@@ -39,6 +39,8 @@ below.  Others listed here are included from the top-level ones.
 |csi_hl_bsp_interrupts.h|BSP|Enumeration of platform-specific interrupt sources in the system
 |csi_ll_bsp_defs.h|BSP|Required macros to supplied by the BSP, picked up inline functions within API headers.
 |*csi_hl_interrupts.h*|API|High-level interrupt and timer API
+|*csi_dl_uart.h*|API|UART control API
+|csi_dl_bsp_uart.h|BSP|Declaration of UART instance context structure
 |===
 
 All header files must be protected against multiple inclusion, by means of a define which takes the form of a capitalised version
@@ -132,3 +134,4 @@ include::auto-gen/modules/csi_types_h.adoc[]
 include::auto-gen/modules/csi_ll_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupt_sources_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupts_h.adoc[]
+include::auto-gen/modules/csi_dl_uart_h.adoc[]

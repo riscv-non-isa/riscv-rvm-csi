@@ -4,6 +4,11 @@ module:
     APIs giving access to low-level functionality (may not be portable).
   c-specific: true
   c-filename: csi_ll.h
+  c-include-files:
+  - filename: csi_types.h
+    system-header: false
+  - filename: stdint.h
+    system-header: true
   c-type-declarations:
   - name: csi_interrupt_enables_t
     description: Interrupt enable bits in the mie CSR
@@ -28,10 +33,40 @@ module:
         timer interrupts and external interrupts are enabled.  To enable all 3 classes of interrupts,
         pass a value of CSI_SW_INTERRUPTS_ENABLE | CSI_TIMER_INTERRUPTS_ENABLE | CSI_EXT_INTERRUPTS_ENABLE.  To
         disable all interrupts, pass a value of 0.
-      type: unsigned
+      type: unsigned long
     c-return-value:
       description: >
         Integer in the same format as int_enables, reflecting the previous value of int_enables prior to the
         change.  This may be stored and passed back into another call to csi_ll_set_interrupt_enables in order
         to restore the previous interrupt enables state.
-      type: unsigned
+      type: unsigned long
+  - name: csi_timer_config
+    description: >
+      Set the frequency of the system timer.  Note that there is typically a single timer for all
+      harts in the system, so this function can affect the operation of other harts.  When using the RVM-CSI high-level
+      interrupt and timer support module, the timer will be compared against a compare register for each hart
+      in order to produce a regular timer interrupt at a tick rate configured using csi_set_timer_tick, which
+      is used for timing purposes.  This function must run in machine mode.
+    c-params:
+    - name: timer_freq_hz
+      description: >
+        System timer frequency in Hz
+      type: unsigned long
+    c-return-value:
+      description: >
+        Status of operation.  CSI_ERROR will be returned if the request is invalid.
+      type: csi_status_t
+  - name: csi_read_mtime
+    description: >
+      Read the current timer value.  This function can be called from M-mode or U-mode.  However,
+      on systems where the timer is not directly readable from U-mode, the function will have to
+      ECALL to M-mode to make the read, which will likely make the value innaccurate due to the
+      delay incurred by this.
+    c-return-value:
+      description: Current timer value
+      type: uint64_t
+  - name: csi_get_timer_freq
+    description: Get the system timer frequency as configured by csi_timer_config.
+    c-return-value:
+      description: System timer frequency in Hz
+      type: unsigned long

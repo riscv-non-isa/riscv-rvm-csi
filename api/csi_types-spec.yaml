@@ -12,17 +12,23 @@ module:
     - name: CSI_SUCCESS
       value: 0
       description: Operation completed successfully
-    - name: CSI_NOT_IMPLEMENTED
-      value: -1
-      description: Functionality not implemented
     - name: CSI_ERROR
-      value: -2
+      value: -1
       description: Generic error code
-    - name: CSI_NOT_INITIALIZED
+    - name: CSI_BUSY
+      value: -2
+      description: Device busy, operation could not be completed.
+    - name: CSI_TIMEOUT
       value: -3
+      description: Operation timed out.
+    - name: CSI_NOT_IMPLEMENTED
+      value: -4
+      description: Functionality not implemented
+    - name: CSI_NOT_INITIALIZED
+      value: -5
       description: Sub-system not correctly initialised, operation failed.
     - name: CSI_OUT_OF_MEM
-      value: -4
+      value: -6
       description: Out-of-memory error
   - name: csi_timeout_callback_t
     description: Function prototype for the user's timeout callback function (M-mode or U-mode)
@@ -33,3 +39,29 @@ module:
       description: >
         Context pointer that was passed into csi_set_timeout
       type: void *
+  - name: csi_isr_t
+    description: Function prototype for the user's trap handler (M-mode or U-mode)
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: source
+      description: >
+        Enumerated interrupt source for which the handler was registered.
+      type: int
+    - name: isr_ctx
+      description: User's context pointer as supplied when the handler was registered.
+      type: void *
+    - name: mtval
+      description: Contents of the mtval register associated with this trap.
+      type: unsigned long
+  - name: csi_poll_wait_wrapper_t
+    description: >
+      Function prototype for a delay function to be used when polling.  In non-threaded systems
+      this function could just contain noops, so the system will busy-wait.  In threaded systems
+      this may implement a timed delay which allows other processes to execute while waiting.
+    type: function
+    func-typedef-retval: void
+    func-typedef-params:
+    - name: wait_time_us
+      description: Wait time in microseconds.  This may be ignored if the wait is implemented as noops.
+      type: unsigned

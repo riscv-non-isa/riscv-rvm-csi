@@ -10,6 +10,9 @@
 #ifndef CSI_LL_H
 #define CSI_LL_H
 
+#include "csi_types.h"
+#include <stdint.h>
+
 /*
  * Interrupt enable bits in the mie CSR
  */
@@ -34,7 +37,39 @@ typedef enum {
  * into another call to csi_ll_set_interrupt_enables in order to restore the
  * previous interrupt enables state.
  */
-unsigned csi_ll_set_interrupt_enables(unsigned int_enables);
+unsigned long csi_ll_set_interrupt_enables(unsigned long int_enables);
+
+/*
+ * Set the frequency of the system timer.  Note that there is typically a single
+ * timer for all harts in the system, so this function can affect the operation of
+ * other harts.  When using the RVM-CSI high-level interrupt and timer support
+ * module, the timer will be compared against a compare register for each hart in
+ * order to produce a regular timer interrupt at a tick rate configured using
+ * csi_set_timer_tick, which is used for timing purposes.  This function must run
+ * in machine mode.
+ *
+ * @param timer_freq_hz: System timer frequency in Hz
+ * @return : Status of operation.  CSI_ERROR will be returned if the request is
+ * invalid.
+ */
+csi_status_t csi_timer_config(unsigned long timer_freq_hz);
+
+/*
+ * Read the current timer value.  This function can be called from M-mode or
+ * U-mode.  However, on systems where the timer is not directly readable from
+ * U-mode, the function will have to ECALL to M-mode to make the read, which will
+ * likely make the value innaccurate due to the delay incurred by this.
+ *
+ * @return : Current timer value
+ */
+uint64_t csi_read_mtime(void);
+
+/*
+ * Get the system timer frequency as configured by csi_timer_config.
+ *
+ * @return : System timer frequency in Hz
+ */
+unsigned long csi_get_timer_freq(void);
 
 
 #endif /* CSI_LL_H */ 

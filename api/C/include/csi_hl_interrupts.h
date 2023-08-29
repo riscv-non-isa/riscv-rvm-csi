@@ -50,17 +50,6 @@
 #include "csi_hl_bsp_interrupts.h"
 
 /*
- * Function prototype for the user's trap handler (M-mode or U-mode)
- *
- * @param source: Enumerated interrupt source for which the handler was registered.
- * @param isr_ctx: User's context pointer as supplied when the handler was
- * registered.
- * @param mtval: Contents of the mtval register associated with this trap.
- */
-typedef void (csi_isr_t)(int source, void *isr_ctx, unsigned mtval);
-
-
-/*
  * Initialize interrupt and timer sub-system for this hart.  Must be called before
  * calling any other functions in this module.  This function must run in machine
  * mode.  Following initialization, all interrupt sources (except exceptions and
@@ -537,20 +526,6 @@ csi_status_t csi_register_fast_exception_handler(void *mctx, void *handler);
 csi_status_t csi_set_preemption(void *mctx, bool preemption_enabled);
 
 /*
- * Set the frequency of the system timer.  Note that there is typically a single
- * timer for all harts in the system, so this function can affect the operation of
- * other harts.  The timer will be compared against a compare register for each
- * hart in order to produce a regular timer interrupt at a tick rate configured
- * using csi_set_timer_tick, which is used for timing purposes. This function must
- * run in machine mode.
- *
- * @param timer_freq_mhz: System timer frequency in MHz
- * @return : Status of operation.  CSI_ERROR will be returned if the request is
- * invalid.
- */
-csi_status_t csi_timer_config(unsigned timer_freq_mhz);
-
-/*
  * This function causes the BSP to register a base handler for timer interrupts and
  * to control the value of the mtimecmp register in order to produce a regular
  * timer tick interrupt at the requested frequency.   This base timer handler can
@@ -630,16 +605,6 @@ csi_status_t csi_set_u_timeout(unsigned irq_system_handle, csi_timeout_t *timeou
  * @return : Status of operation.
  */
 csi_status_t csi_cancel_timeout(csi_timeout_t *timeout_handle);
-
-/*
- * Read the current timer value.  This function can be called from M-mode or
- * U-mode.  However, on systems where the timer is not directly readable from
- * U-mode, the function will have to ECALL to M-mode to make the read, which will
- * likely make the value innaccurate due to the delay incurred by this.
- *
- * @return : Current timer value
- */
-long long csi_read_mtime(void);
 
 
 #endif /* CSI_HL_INTERRUPTS_H */ 

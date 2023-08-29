@@ -12,3 +12,4 @@ modules:
   - csi_ll-spec.yaml
   - csi_hl_interrupt_sources-spec.yaml
   - csi_hl_interrupts-spec.yaml
+  - csi_dl_uart-spec.yaml
