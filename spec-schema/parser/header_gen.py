@@ -187,7 +187,14 @@ def generate_c(api_definition, module_definitions, out_dir):
                 out_str += format_c_function(function)
                 out_str += "\n"
             out_str += "\n"        
-                
+        
+        # Add code fragments
+        if 'c-definitions' in module.keys():
+            for fragment in module['c-definitions']:
+                out_str +=  "/*\n " + format_c_comment_lines(fragment['comment']) + "*/\n"
+                out_str += fragment['fragment'] + '\n'
+            out_str += "\n"
+ 
         # Close guard against multiple inclusion
         out_str += "#endif /* " + def_file_name + " */ \n"
         

@@ -24,7 +24,13 @@ def format_c_function_prototype(function):
         out_str = out_str.rstrip(", ") # Get rid of last comma/space
         
     else:
-        out_str += "void"       
+        out_str += "void"
+    
+    if ('var-args' in function.keys()):
+        if function['var-args']:
+            out_str += ", ..."
+    if 'c-attribute' in function.keys():
+        out_str += ") __attribute__(" + function['c-attribute']
     
     out_str +=");\n"
     return out_str
