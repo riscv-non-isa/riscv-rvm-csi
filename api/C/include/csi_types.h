@@ -3,7 +3,7 @@
  *
  * General-purpose definitions such as return codes.
  *
- * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
+ * Copyright (c) RISC-V International 2023. Creative Commons License. Auto-
  * generated file: DO NOT EDIT
  */
 

@@ -38,7 +38,7 @@
  * the implementing BSP code. Typically the base trap handler implementation will
  * rely on the use of this register to store a pointer to its context space.
  *
- * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
+ * Copyright (c) RISC-V International 2023. Creative Commons License. Auto-
  * generated file: DO NOT EDIT
  */
 
