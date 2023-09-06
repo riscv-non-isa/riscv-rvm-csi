@@ -87,6 +87,14 @@
               "$ref": "#/definitions/c-function-param"
             }
           },
+          "c-attribute": {
+            "description": "Optional Cfunction attribute (normally absent)",
+            "type": "string"
+          },
+          "var-args": {
+            "description": "Set true for functions with variable number of args",
+            "type": "boolean"
+          },
           "c-return-value": {
             "description": "C function return type",
             "type": "object",
@@ -205,6 +213,21 @@
           }
         }
       },
+      "c-code-fragment": {
+        "description": "C code fragment",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "comment": {
+            "description": "Description of fragment to go into comment + docs",
+            "type": "string"
+          },
+          "fragment": {
+            "description": "Fragment of C code for direct inclusion",
+            "type": "string"
+          }
+        }
+      },
       "module": {
         "description": "The API may be divided into modules, each covering a different functional area.  Modules may also equate to files.  A module without functions is permissible, for example to create a top-level header file.",
         "type": "object",
@@ -255,6 +278,12 @@
             "type": "array",
             "items": {
               "$ref": "#/definitions/function"
+            }
+          },
+          "c-definitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-code-fragment"
             }
           }
         }

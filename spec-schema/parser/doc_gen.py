@@ -189,6 +189,16 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, l
             out_str += format_adoc_function(function, linked_sections)
             out_str += "\n"
         out_str += "\n"
+
+    if 'c-definitions' in module.keys():
+        out_str += heading_marker(2) + "Definitions\n"
+        for fragment in  module['c-definitions']:
+            out_str += fragment['comment'] + ':\n'
+            out_str += '''
+[source, c]
+----
+'''
+            out_str += fragment['fragment'] + '----\n'
     
     if adoc_optimization == 'html':
         # Add link back to top level          

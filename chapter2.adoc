@@ -22,6 +22,8 @@ To support the latter case, pre-processor directives that are intended to change
 All API functions shall be implemented in a way that supports simultaneous calls from multiple cores or software threads.
 This is supported through the use of an initialisation function which allocates a separate context space for each instance.
 
+The single exception to this is the high-level console API.
+
 === Header Files
 
 "Top-level" header files which would normally be included by application writers are indicated in bold in the table
@@ -41,6 +43,7 @@ below.  Others listed here are included from the top-level ones.
 |*csi_hl_interrupts.h*|API|High-level interrupt and timer API
 |*csi_dl_uart.h*|API|UART control API
 |csi_dl_bsp_uart.h|BSP|Declaration of UART instance context structure
+|*csi_hl_console.h*|API|High-level console API
 |===
 
 All header files must be protected against multiple inclusion, by means of a define which takes the form of a capitalised version
@@ -116,18 +119,18 @@ The following macros may be defined globally by application writers, in order to
 [cols="3,2,6",options="header"]
 |===
 |Macro|Possible values|Purpose
-|CSI_UPRINT_OUTPUT|NONE / SEMIHOST / UART / CIRCBUFF
+|CSI_UPRINT_OUTPUT|CSI_UPRINTF_NONE / CSI_UPRINTF_SEMIHOST / CSI_UPRINTF_UART / CSI_UPRINTF_CIRCBUFF
 a|Determines the text output mode of the csi_uprintf function.
 
-* NONE=function has no effect;
-* SEMIHOST=function routes to semihosting if available;
-* UART=function routes to UART;
-* CIRCBUF=function routes to circular buffer.
+* CSI_UPRINTF_NONE=function has no effect;
+* CSI_UPRINTF_SEMIHOST=function routes to semihosting if available;
+* CSI_UPRINTF_UART=function routes to UART;
+* CSI_UPRINTF_CIRCBUFF=function routes to circular buffer.
 
-See csi_uprintf description for details.  If the macro is undefined,
-behaviour defaults to SEMIHOST, in which case behaviour is undefined if a semihosting mechanism is unavailable.
-|CSI_LOG_LEVEL|ERR / WARN / INFO / NONE|Determines the behaviour of the macros CSI_LOG_ERR, CSI_LOG_WARN and
-CSI_LOG_INFO.  See documentation of these macros for details.
+See csi_uprintf (high-level console API) description for details.  If the macro is undefined,
+behaviour defaults to CSI_UPRINTF_SEMIHOST, in which case behaviour is undefined if a semihosting mechanism is unavailable.
+|CSI_LOG_LEVEL|CSI_LOG_LEVEL_ERR / CSI_LOG_LEVEL_WARN / CSI_LOG_LEVEL_INFO / CSI_LOG_LEVEL_NONE|Determines the behaviour of
+the macros CSI_LOG_ERR, CSI_LOG_WARN and CSI_LOG_INFO.  See documentation of these macros for details.
 |===
 
 include::auto-gen/modules/csi_types_h.adoc[]
@@ -135,3 +138,5 @@ include::auto-gen/modules/csi_ll_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupt_sources_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupts_h.adoc[]
 include::auto-gen/modules/csi_dl_uart_h.adoc[]
+include::auto-gen/modules/csi_hl_console_h.adoc[]
+include::csi_uprintf.adoc[]

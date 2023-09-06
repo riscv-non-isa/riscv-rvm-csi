@@ -1,0 +1,72 @@
+==== csi_uprintf Format Conversions
+
+The csi_uprintf function arguments mirror those passed to the printf C library function: a string which
+can optionally contain conversion specifications, followed by a variable number of further argments,
+each containing a parameter to match one of the conversion specifications.  However, only a subset
+of the conversion specifications supported by printf are also supported by csi_uprintf.
+
+Note also that output strings will be truncated to a maximum length CSI_UPRINTF_MAX_CHARS.
+
+A conversion specification takes the form:
+`%[<flags>][<width>]<specifier>`
+
+These fields are described below.
+
+===== Flags
+
+The following flag is supported:
+[cols="1,6"]
+|===
+|0| Left-pad a number with zeros instead of spaces
+|===
+
+===== Width
+
+The width specifier is an optional number which sets the minimum number of characters to be printed.
+If the value is shorter than the specified number, the result is padded with blank spaces, or with zeroes if the
+corresponding format flag has been specified. The value is not truncated even if the result is larger.
+
+===== Format Specifiers
+
+The following format specifiers are supported:
+[cols="1,6"]
+|===
+|s| String of characters
+|d| Signed decimal integer
+|i| Signed decimal integer (equivalent to d)
+|x| Unsigned hexadecimal integer
+|X| Unsigned hexadecimal integer (uppercase)
+|%| A % followed by another % writes a single % to the output.
+|===
+
+===== Examples
+
+The following are some examples of using csi_uprintf with various format conversions:
+
+[source, c]
+----
+#include "csi_hl_console.h"
+
+int main(void)
+{
+    csi_uprintf("Hello world, %s, %s\n", "String", "string_2");
+    csi_uprintf("%d, %d, %10d, %10d, %010d, %010d\n", 123, -456, 12345, -54321, 6789, -9876);
+    csi_uprintf("%d, %d, %10d, %10d, %010d, %010d\n", 0xA2BC, -0xDEF1, 0xAB2ACAD, -0xDaE3FAD, 0x67A89, -0x9Fe876);
+    csi_uprintf("%x, %x, %10x, %10x, %010x, %010x\n", 5245, -426265, 68438743, -4795809, 563565, -3687585);
+    csi_uprintf("%X, %X, %10X, %10X, %010X, %010X\n", 0xAB986d, -0xDEADBEEF, 0xC00FFeee, -0xBADF00D, 0x98ABCADC, -0xABCDEF12);
+    csi_uprintf("Hello world, %s, %d, %x, %X\n", "String", 12345, 0xDEADBEEF, 0xBADF00D);
+    return 0;
+}
+----
+
+This produces the same output as printf:
+
+[listing]
+----
+Hello world, String, string_2
+123, -456, 12345, -54321, 0000006789, -000009876
+41660, -57073, 179481773, -229523373, 0000424585, -010479734
+147d, fff97ee7, 4144ad7, ffb6d25f, 000008996d, 00ffc7bb5f
+AB986D, 21524111, C00FFEEE, F4520FF3, 0098ABCADC, 00543210EE
+Hello world, String, 12345, deadbeef, BADF00D
+----

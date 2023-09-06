@@ -9,7 +9,7 @@
  * refer to whether a function waits for completion of a transmission or reception
  * of data.  In the following text, the software terminolgy is used.
  *
- * Copyright (c) RISC-V International 2022. Creative Commons License. Auto-
+ * Copyright (c) RISC-V International 2023. Creative Commons License. Auto-
  * generated file: DO NOT EDIT
  */
 
