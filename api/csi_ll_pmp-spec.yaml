@@ -1,0 +1,96 @@
+module:
+  name: Low-Level PMP API
+  description: >
+    This module provides functionality for PMP configuration.
+  c-specific: true
+  c-filename: csi_ll_pmp.h
+  c-include-files:
+  - filename: csi_types.h
+    system-header: false
+  - filename: stdint.h
+    system-header: true
+  c-type-declarations:
+  - name: csi_addr_matching_t
+    description: Types of address Matching
+    type: enum
+    enum-members:
+    - name: ADDRESS_MATCHING_OFF
+      value: 0
+      description: /* Null region (disabled) */
+    - name: ADDRESS_MATCHING_TOR
+      value: 1
+      description: /* Top of range */
+    - name: ADDRESS_MATCHING_NA4
+      value: 2
+      description: /* Naturally aligned four-byte region */
+    - name: ADDRESS_MATCHING_NAPOT
+      value: 3
+      description: /* Naturally aligned power-of-two region, ≥8 bytes */
+  - name: csi_mpu_region_attr_t
+    description: Attribution of PMP coniguration
+    type: struct
+    struct-members:
+        - name: flag_r
+          type: bool
+          description: /* The flag of readable. 0: not readable; 1: readable */
+        - name: flag_w
+          type: bool
+          description: /* The flag of writeable. 0: not writeable; 1: writeable */
+        - name: flag_x
+          type: bool
+          description: /* The flag of execable. 0: not execable; 1: execable */
+        - name: mode
+          type: csi_addr_matching_t
+          description: /* Address matching mode */
+        - name: lock
+          type: bool
+          description: /* The flag of lock,  0: not be locked; 1 : be locked */
+
+  functions:
+  - name: csi_mpu_config_region
+    description: >
+      Configure PMP range.
+      This function only can be called in M-mode. If it is called
+      in other mode, it may return an error or cause carsh. When this function is called
+      with success, it will not be effective untill the core has been exit M-mode.
+    c-params:
+    - name: idx
+      description: >
+        The index of PMP config entries
+      type: unsigned int
+    - name: base_addr
+      description: >
+        The base address of this range need to be configured
+      type: unsigned long
+    - name: size
+      description: >
+        The size of this range need to be configured
+      type: unsigned long
+    - name: attr
+      description: >
+        A point to the attribution of this range to be configured
+      type: mpu_region_attr_t *
+    - name: enable
+      description: >
+        Eanble flag to indicate whether this ranged can be accessed or not
+      type: unsigned int
+    c-return-value:
+      description: >
+        Status code
+      type: csi_status_t
+  - name: csi_mpu_disable_region
+    description: >
+        Disable PMP range by index. 
+
+        This function only can be called in M-mode. If it is called
+        in other mode, it may return an error or cause carsh. When this function is called
+        with success, it will not be effective untill the core has been exit M-mode.
+    c-params:
+    - name: idx
+      description: >
+        The index of PMP config entries
+      type: unsigned int
+    c-return-value:
+      description: >
+        Status code
+      type: csi_status_t
