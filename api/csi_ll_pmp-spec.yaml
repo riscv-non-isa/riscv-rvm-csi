@@ -26,7 +26,7 @@ module:
     - name: ADDRESS_MATCHING_NAPOT
       value: 3
       description: /* Naturally aligned power-of-two region, ≥8 bytes */
-  - name: csi_mpu_region_attr_t
+  - name: csi_pmp_region_attr_t
     description: Attribution of PMP coniguration
     type: struct
     struct-members:
@@ -35,7 +35,7 @@ module:
           description: /* The flag of readable. 0: not readable; 1: readable */
         - name: flag_w
           type: bool
-          description: /* The flag of writeable. 0: not writeable; 1: writeable */
+          description: /* The flag of writable. 0: not writable; 1: writable */
         - name: flag_x
           type: bool
           description: /* The flag of execable. 0: not execable; 1: execable */
@@ -89,7 +89,7 @@ module:
     - name: attr
       description: >
         A point to the attribution of this range to be configured
-      type: mpu_region_attr_t *
+      type: csi_pmp_region_attr_t *
     c-return-value:
       description: >
         Status code
@@ -119,7 +119,7 @@ module:
     - name: attr
       description: >
        A point to the buffer which is used to output attribute of this entry
-      type: mpu_region_attr_t *
+      type: csi_pmp_region_attr_t *
     c-return-value:
       description: >
         Status code
@@ -312,9 +312,9 @@ module:
       description: >
         Status code
       type: csi_status_t
-  - name: csi_pmp_set_writeable
+  - name: csi_pmp_set_writable
     description: >
-        Set PMP enctry writeable flag by index.
+        Set PMP enctry writable flag by index.
 
         This function only can be called in M-mode. If it is called
         in other mode, it may return an error or cause carsh. When this function is called
@@ -326,15 +326,15 @@ module:
       type: unsigned int
     - name: flag_w
       description: >
-        The writeable flag of PMP config entries.
+        The writable flag of PMP config entries.
       type: bool
     c-return-value:
       description: >
         Status code
       type: csi_status_t
-  - name: csi_pmp_get_writeable
+  - name: csi_pmp_get_writable
     description: >
-        Get PMP enctry writeable flag by index.
+        Get PMP enctry writable flag by index.
 
         This function only can be called in M-mode. If it is called
         in other mode, it may return an error or cause carsh. When this function is called
@@ -346,7 +346,7 @@ module:
       type: unsigned int
     - name: flag_w
       description: >
-        A pointer to the buffer which is used to output the writeable flag
+        A pointer to the buffer which is used to output the writable flag
         of PMP config entries.
       type: bool *
     c-return-value:

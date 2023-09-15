@@ -27,11 +27,11 @@ typedef enum {
  */
 typedef struct {
     bool flag_r; /* The flag of readable. 0: not readable; 1: readable */
-    bool flag_w; /* The flag of writeable. 0: not writeable; 1: writeable */
+    bool flag_w; /* The flag of writable. 0: not writable; 1: writable */
     bool flag_x; /* The flag of execable. 0: not execable; 1: execable */
     csi_addr_matching_t mode; /* Address matching mode */
     bool lock; /* The flag of lock,  0: not be locked; 1 : be locked */
-} csi_mpu_region_attr_t;
+} csi_pmp_region_attr_t;
 
 /*
  * Get PMP range number for the hard id.
@@ -62,7 +62,7 @@ csi_status_t csi_pmp_get_range_num(unsigned int hart_id, unsigned int *range_num
  * @return : Status code
  */
 csi_status_t csi_pmp_config_region(unsigned int idx, unsigned long base_addr,
-                                   unsigned long size, mpu_region_attr_t *attr);
+                                   unsigned long size, csi_pmp_region_attr_t *attr);
 
 /*
  * Get PMP entry configure information.
@@ -81,7 +81,7 @@ csi_status_t csi_pmp_config_region(unsigned int idx, unsigned long base_addr,
  * @return : Status code
  */
 csi_status_t csi_pmp_get_region(unsigned int idx, unsigned long *base_addr,
-                                   unsigned long *size, mpu_region_attr_t *attr);
+                                   unsigned long *size, csi_pmp_region_attr_t *attr);
 
 /*
  * Lock PMP entry by index.
@@ -208,30 +208,30 @@ csi_status_t csi_pmp_set_readable(unsigned int idx, bool flag_r);
 csi_status_t csi_pmp_get_readable(unsigned int idx, bool *flag_r);
 
 /*
- * Set PMP enctry writeable flag by index.
+ * Set PMP enctry writable flag by index.
  *
  * This function only can be called in M-mode. If it is called
  * in other mode, it may return an error or cause carsh. When this function is called
  * with success, it will not be effective untill the core has been exit M-mode.
  *
  * @param idx: The index of PMP config entries
- * @param flag_w: The writeable flag of PMP config entries.
+ * @param flag_w: The writable flag of PMP config entries.
  * @return : Status code
  */
-csi_status_t csi_pmp_set_writeable(unsigned int idx, bool flag_w);
+csi_status_t csi_pmp_set_writable(unsigned int idx, bool flag_w);
 
 /*
- * Get PMP enctry writeable flag by index.
+ * Get PMP enctry writable flag by index.
  *
  * This function only can be called in M-mode. If it is called
  * in other mode, it may return an error or cause carsh. When this function is called
  * with success, it will not be effective untill the core has been exit M-mode.
  *
  * @param idx: The index of PMP config entries
- * @param flag_w: A pointer to the buffer which is used to output the writeable flag
+ * @param flag_w: A pointer to the buffer which is used to output the writable flag
  *                  of PMP config entries.
  * @return : Status code
  */
-csi_status_t csi_pmp_get_writeable(unsigned int idx, bool *flag_w);
+csi_status_t csi_pmp_get_writable(unsigned int idx, bool *flag_w);
 
 #endif /* CSI_LL_PMP_H */
