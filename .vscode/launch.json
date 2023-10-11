@@ -1,0 +1,35 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: doc generation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/spec-schema/parser/csi_parser.py",
+            "args": ["--generate-docs", "${workspaceFolder}/api/rvm-csi-spec.yaml", "--doc-out-dir=${workspaceFolder}/auto-gen"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: test doc generation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/spec-schema/parser/csi_parser.py",
+            "args": ["--generate-docs", "${workspaceFolder}/spec-schema/parser/test_data/simple.rvm-csi.yaml", "--doc-out-dir=${workspaceFolder}/spec-schema/parser/adoc_output"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: test header generation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/spec-schema/parser/csi_parser.py",
+            "args": ["${workspaceFolder}/spec-schema/parser/test_data/simple.rvm-csi.yaml", "--out-dir=${workspaceFolder}/spec-schema/parser/output"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },        
+    ]
+}
