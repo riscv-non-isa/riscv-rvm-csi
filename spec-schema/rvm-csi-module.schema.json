@@ -228,6 +228,46 @@
           }
         }
       },
+      "c-macro": {
+        "description": "C macro with arguments and potentially a return value (for a simple definition, use c-code-fragment instead)",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description", "code"],
+        "properties": {
+          "name": {
+            "description": "Macro name",
+            "type": "string"
+          },
+          "description": {
+            "description": "Macro description",
+            "type": "string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/note"
+            }
+          },
+          "c-params": {
+            "description": "C function parameter list (affects documentation only)",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-function-param"
+            }
+          },
+          "c-return-value": {
+            "description": "C return type (affects documentation only)",
+            "type": "object",
+            "items":  {
+              "$ref": "#/definitions/c-function-return-value"
+            }
+          },
+          "code": {
+            "description": "Code fragment for the macro",
+            "type": "string"
+          }
+        }
+      },
       "module": {
         "description": "The API may be divided into modules, each covering a different functional area.  Modules may also equate to files.  A module without functions is permissible, for example to create a top-level header file.",
         "type": "object",
@@ -244,6 +284,10 @@
           },
           "c-specific": {
             "description": "Set true if the module is unique to the C implementation",
+            "type": "boolean"
+          },
+          "no-assembler": {
+            "description": "Set true for a C header that must not be included from assembler code (contents will be wrapped with #ifndef __ASSEMBLER__)",
             "type": "boolean"
           },
           "c-filename": {
@@ -278,6 +322,12 @@
             "type": "array",
             "items": {
               "$ref": "#/definitions/function"
+            }
+          },
+          "macros": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/c-macro"
             }
           },
           "c-definitions": {

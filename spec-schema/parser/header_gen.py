@@ -131,6 +131,37 @@ def format_c_function(function):
 
     return out_str
 
+def format_c_macro(macro):
+    ''' Takes a macro object.
+        Returns a string containing the associated header file content.
+    '''
+    
+    # Start the comment.
+    out_str = "/*\n "
+        
+    out_str += format_c_comment_lines(macro['description'])
+    out_str += "*\n "
+    if 'notes' in macro.keys():
+        for note in macro['notes']:
+            out_str += format_c_comment_lines(note)
+        out_str += "*\n "
+
+    if 'c-params' in macro.keys():
+        for param in macro['c-params']:
+            out_str += format_c_comment_lines("@param " + param['name'] + ": " + param['description'])
+    if 'c-return-value' in macro.keys():
+        out_str += format_c_comment_lines("@return " + ": " + macro['c-return-value']['description'])
+
+    # Close comment
+    out_str += "*/\n"
+
+    # Write out the macro code
+    out_str += macro['code']
+    out_str += "\n"
+
+    return out_str
+
+
 def generate_c(api_definition, module_definitions, out_dir):
     ''' Top level function which iterates through each of the modules in the api definition 
         to build C header content and write it an appropriate file.
@@ -173,7 +204,12 @@ def generate_c(api_definition, module_definitions, out_dir):
             for include_file in module['c-include-files']:
                 out_str += format_c_include_file(include_file)
             out_str += "\n"
-                    
+        
+        # Protection against inclusion in assembler code if required
+        if 'no-assembler' in module.keys():
+            if module['no-assembler']:
+                out_str += "#ifndef __ASSEMBLER__\n\n"
+        
         # Add type declarations
         if 'c-type-declarations' in module.keys():
             for type_declaration in module['c-type-declarations']:
@@ -181,20 +217,31 @@ def generate_c(api_definition, module_definitions, out_dir):
                 out_str += "\n"
             out_str += "\n"
             
-        # Add function declarations
-        if 'functions' in module.keys():
-            for function in module['functions']:
-                out_str += format_c_function(function)
-                out_str += "\n"
-            out_str += "\n"        
-        
         # Add code fragments
         if 'c-definitions' in module.keys():
             for fragment in module['c-definitions']:
                 out_str +=  "/*\n " + format_c_comment_lines(fragment['comment']) + "*/\n"
                 out_str += fragment['fragment'] + '\n'
             out_str += "\n"
- 
+
+        # Add macros
+        if 'macros' in module.keys():
+            for macro in module['macros']:
+                out_str += format_c_macro(macro)
+            out_str += "\n"
+
+        # Add function declarations
+        if 'functions' in module.keys():
+            for function in module['functions']:
+                out_str += format_c_function(function)
+                out_str += "\n"
+            out_str += "\n"        
+         
+        # Protection against inclusion in assembler code if required
+        if 'no-assembler' in module.keys():
+            if module['no-assembler']:
+                out_str += "#endif // __ASSEMBLER__\n\n"
+
         # Close guard against multiple inclusion
         out_str += "#endif /* " + def_file_name + " */ \n"
         
