@@ -145,6 +145,53 @@ def format_adoc_function(function, linked_sections):
     
     return out_str   
 
+def format_adoc_macro(macro):
+    ''' Builds adoc level 3 & 4 section for supplied macro declaration.
+        Returns function adoc string.
+    '''
+    out_str = heading_marker(3) + macro['name'] + '[[' + macro['name'] + ']]' "\n"
+    out_str += '''
+[source, c]
+----
+'''
+    out_str += macro['code']
+    out_str += "----\n\n"
+
+    out_str += macro['description'] + "\n"
+
+    if 'notes' in macro.keys():
+        for note in macro['notes']:
+            out_str += note + "\n\n"
+    
+    out_str += heading_marker(4) + "Return\n"
+    
+    if 'c-return-value' in macro.keys():
+        out_str += "`" + macro['c-return-value']['type'] + "` - " + \
+                macro['c-return-value']['description'] + "\n\n"
+    
+    out_str += heading_marker(4) + "Parameters\n"
+    
+    if 'c-params' in macro.keys():
+        for param in macro['c-params']:
+                        
+            param_type = param['type']
+            param_name = param['name']
+            if param_type[-1] == '*': # pointer
+                param_type = param_type.rstrip('* ')
+                param_name = "*" + param_name
+                                        
+            out_str += param_type + " `" + param_name + "` - " + param['description'] + "\n\n"
+            
+            if 'notes' in param.keys():
+                out_str += format_text_from_array(param['notes'])
+            out_str += "\n"
+    else:
+        out_str += "Macro takes no parameters\n\n"
+
+    return out_str
+
+
+
 def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, linked_sections):
     ''' Builds adoc file for a module.
         Inputs are the module definition and the output directory & sub directory for the
@@ -187,6 +234,13 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, l
         out_str += heading_marker(2) + "Functions\n"
         for function in module['functions']:
             out_str += format_adoc_function(function, linked_sections)
+            out_str += "\n"
+        out_str += "\n"
+
+    if 'macros' in module.keys():
+        out_str += heading_marker(2) + "Macros\n"
+        for macro in module['macros']:
+            out_str += format_adoc_macro(macro)
             out_str += "\n"
         out_str += "\n"
 
