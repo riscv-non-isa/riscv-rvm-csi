@@ -7,76 +7,59 @@ module:
   c-include-files:
   - filename: csi_types.h
     system-header: false
-  - filename: stdint.h
-    system-header: true
   c-type-declarations:
-  - name: csi_addr_matching_t
-    description: Types of address Matching
-    type: enum
-    enum-members:
-    - name: ADDRESS_MATCHING_OFF
-      value: 0
-      description: /* Null region (disabled) */
-    - name: ADDRESS_MATCHING_TOR
-      value: 1
-      description: /* Top of range */
-    - name: ADDRESS_MATCHING_NA4
-      value: 2
-      description: /* Naturally aligned four-byte region */
-    - name: ADDRESS_MATCHING_NAPOT
-      value: 3
-      description: /* Naturally aligned power-of-two region, ≥8 bytes */
-  - name: csi_pmp_region_attr_t
-    description: Attribution of PMP coniguration
-    type: struct
-    struct-members:
-        - name: flag_r
-          type: bool
-          description: /* The flag of readable. 0: not readable; 1: readable */
-        - name: flag_w
-          type: bool
-          description: /* The flag of writable. 0: not writable; 1: writable */
-        - name: flag_x
-          type: bool
-          description: /* The flag of execable. 0: not execable; 1: execable */
-        - name: mode
-          type: csi_addr_matching_t
-          description: /* Address matching mode */
-        - name: lock
-          type: bool
-          description: /* The flag of lock,  0: not be locked; 1 : be locked */
+  - comment: >
+      Attribute definitions of PMP entry:
+      PMP_ATTR_FLAG_R: indicate that the PMP entry permits to read
+      PMP_ATTR_FLAG_W: indicate that the PMP entry permits to write
+      PMP_ATTR_FLAG_X: indicate that the PMP entry permits to execute
+      PMP_ATTR_FLAG_L: indicate that the PMP entry permits to lock
+    fragment: |
+      #define PMP_ATTR_FLAG_R				    _UL(0x01)
+      #define PMP_ATTR_FLAG_W				    _UL(0x02)
+      #define PMP_ATTR_FLAG_X				    _UL(0x04)
+      #define PMP_ATTR_FLAG_L				    _UL(0x80)
+  - comment: >
+      Address-matching definitions of PMP entry:
+      PMP_ATTR_ADDR_MATCHING_TOR: indicate that the PMP entry's address-matching is TOR
+      PMP_ATTR_ADDR_MATCHING_NA4: indicate that the PMP entry's address-matching is NA4
+      PMP_ATTR_ADDR_MATCHING_NAPOT: indicate that the PMP entry's address-matching is
+      NAPOT
+    fragment: |
+      #define PMP_ATTR_ADDR_MATCHING_TOR		_UL(0x08)
+      #define PMP_ATTR_ADDR_MATCHING_NA4		_UL(0x10)
+      #define PMP_ATTR_ADDR_MATCHING_NAPOT	_UL(0x18)
 
   functions:
   - name: csi_pmp_get_range_num
     description: >
       Get PMP range number for the hard id.
-      If the hard id is invalidate, such as out of support range, it should return
+      If the hart id is invalid, such as out of support range, it should return
       an error
     c-params:
     - name: hart_id
       description: >
-        The hart id used to get the pmp range number
+        The hart id used to get the pmp entry number
       type: unsigned int
-    - name: range_number
-      description: >
-        A pointer to store the ouptut value of PMP range number
-      type: unsigned int*
     c-return-value:
       description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_config_region
+        The number of PMP entry; -1 will be returned as and error code if the
+        input is invalid.
+      type: int
+  - name: csi_pmp_set_entry
     description: >
-      Configure PMP range.
+      Set PMP entry.
+
       This function only can be called in M-mode. If it is called
       in other mode, it may return an error or cause carsh. When this function is called
-      with success, it will not be effective untill the core has been exit M-mode.
+      with success, it will not be effective untill  the core exits M-mode.
+
       Also, an error should be returned if the output parameters is invalid, such as idx
       out of range, address or size is not supported or over overlapped etc.
     c-params:
     - name: idx
       description: >
-        The index of PMP config entries
+        The PMP entry index
       type: unsigned int
     - name: base_addr
       description: >
@@ -86,15 +69,25 @@ module:
       description: >
         The size of this range need to be configured
       type: unsigned long
-    - name: attr
+    - name: pmp_attr
       description: >
-        A point to the attribution of this range to be configured
-      type: csi_pmp_region_attr_t *
+        The configuration information of PMP entry.The PMP configuration
+        format is:
+            7       6         5         4        3         2           1        0
+        -------------------------------------------------------------------------------
+        |    L   |        0         |        A         |    X     |     W   |    R    |
+        -------------------------------------------------------------------------------
+        R: indicate that the PMP entry permits to read
+        W: indicate that the PMP entry permits to write
+        X: indicate that the PMP entry permits to execute
+        A: indicate the address-matching mode: TOR/NA4/NAPOT
+        L: indicate that the PMP entry permits to lock
+      type: unsigned char
     c-return-value:
       description: >
         Status code
       type: csi_status_t
-  - name: csi_pmp_get_region
+  - name: csi_pmp_get_entry
     description: >
         Get PMP entry configure information.
 
@@ -116,240 +109,22 @@ module:
       description: >
        A pointer to the buffer which is used to output the size of this entry
       type: unsigned long *
-    - name: attr
+    - name: pmp_attr
       description: >
-       A point to the buffer which is used to output attribute of this entry
-      type: csi_pmp_region_attr_t *
+        A pointer to the buffer which is used to output the the
+        configuration information of PMP entry.The PMP configuration format is
+            7       6         5         4        3         2           1        0
+        -------------------------------------------------------------------------------
+        |    L   |        0         |        A         |    X     |     W   |    R    |
+        -------------------------------------------------------------------------------
+        R: indicate that the PMP entry permits to read
+        W: indicate that the PMP entry permits to write
+        X: indicate that the PMP entry permits to execute
+        A: indicate the address-matching mode: TOR/NA4/NAPOT
+        L: indicate that the PMP entry permits to lock
+      type: unsigned char *
     c-return-value:
       description: >
         Status code
       type: csi_status_t
-  - name: csi_pmp_lock_region
-    description: >
-        Lock PMP entry by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_set_address
-    description: >
-        Set PMP entry address and size need to be controlled by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: base_addr
-      description: >
-        The base address of this entry need to be configured
-      type: unsigned long
-    - name: size
-      description: >
-        The size of this entry need to be configured
-      type: unsigned long
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_get_address
-    description: >
-        Get PMP entry address and size been controlled by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: base_addr
-      description: >
-        A pointer to the buffer which is used to output the base address 
-        of this range
-      type: unsigned long *
-    - name: size
-      description: >
-        A pointer to the buffer which is used to output the size of this entry
-      type: unsigned long *
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_set_address_mode
-    description: >
-        Set PMP entry address mode by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: mode
-      description: >
-        The address mode of PMP config entries
-      type: csi_addr_matching_t
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_get_address_mode
-    description: >
-        Get PMP entry address mode by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: mode
-      description: >
-        A pointer to the buffer which is used to output the address mode of
-        this entry
-      type: csi_addr_matching_t *
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_set_executable
-    description: >
-        Set PMP enctry excecutable flag by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_x
-      description: >
-        The excecutable flag of PMP config entries.
-      type: bool
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_get_executable
-    description: >
-        Get PMP enctry excecutable flag by index
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_x
-      description: >
-        A pointer to the buffer which is used to output the excecutable flag
-        of PMP config entries.
-      type: bool *
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_set_readable
-    description: >
-        Set PMP enctry readable flag by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_r
-      description: >
-        The readable flag of PMP config entries.
-      type: bool
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_get_readable
-    description: >
-        Get PMP enctry readable flag by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_r
-      description: >
-        A pointer to the buffer which is used to output the readable flag
-        of PMP config entries.
-      type: bool *
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_set_writable
-    description: >
-        Set PMP enctry writable flag by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_w
-      description: >
-        The writable flag of PMP config entries.
-      type: bool
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
-  - name: csi_pmp_get_writable
-    description: >
-        Get PMP enctry writable flag by index.
-
-        This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh. When this function is called
-        with success, it will not be effective untill the core has been exit M-mode.
-    c-params:
-    - name: idx
-      description: >
-        The index of PMP config entries
-      type: unsigned int
-    - name: flag_w
-      description: >
-        A pointer to the buffer which is used to output the writable flag
-        of PMP config entries.
-      type: bool *
-    c-return-value:
-      description: >
-        Status code
-      type: csi_status_t
+ 
