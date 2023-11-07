@@ -7,7 +7,8 @@ module:
   c-include-files:
   - filename: csi_types.h
     system-header: false
-  c-type-declarations:
+
+  c-definitions:
   - comment: >
       Attribute definitions of PMP entry:
       PMP_ATTR_FLAG_R: indicate that the PMP entry permits to read
@@ -31,7 +32,7 @@ module:
       #define PMP_ATTR_ADDR_MATCHING_NAPOT	_UL(0x18)
 
   functions:
-  - name: csi_pmp_get_range_num
+  - name: csi_pmp_get_entry_num
     description: >
       Get PMP range number for the hard id.
       If the hart id is invalid, such as out of support range, it should return
@@ -51,7 +52,7 @@ module:
       Set PMP entry.
 
       This function only can be called in M-mode. If it is called
-      in other mode, it may return an error or cause carsh. When this function is called
+      in other mode, it may cause carsh. When this function is called
       with success, it will not be effective untill  the core exits M-mode.
 
       Also, an error should be returned if the output parameters is invalid, such as idx
@@ -73,15 +74,11 @@ module:
       description: >
         The configuration information of PMP entry.The PMP configuration
         format is:
-            7       6         5         4        3         2           1        0
-        -------------------------------------------------------------------------------
-        |    L   |        0         |        A         |    X     |     W   |    R    |
-        -------------------------------------------------------------------------------
-        R: indicate that the PMP entry permits to read
-        W: indicate that the PMP entry permits to write
-        X: indicate that the PMP entry permits to execute
-        A: indicate the address-matching mode: TOR/NA4/NAPOT
-        L: indicate that the PMP entry permits to lock
+        bit0[R]: indicate that the PMP entry permits to read.
+        bit1[W]: indicate that the PMP entry permits to write.
+        bit2[X]: indicate that the PMP entry permits to execute.
+        bit4_3[A]: indicate the address-matching mode: TOR/NA4/NAPOT.
+        bit7[L]: indicate that the PMP entry permits to lock.
       type: unsigned char
     c-return-value:
       description: >
@@ -92,7 +89,7 @@ module:
         Get PMP entry configure information.
 
         This function only can be called in M-mode. If it is called
-        in other mode, it may return an error or cause carsh.
+        in other mode, it may cause carsh.
         Also, an error should be returned if the output parameters is invalid, such as idx
         out of range.
     c-params:
@@ -112,16 +109,12 @@ module:
     - name: pmp_attr
       description: >
         A pointer to the buffer which is used to output the the
-        configuration information of PMP entry.The PMP configuration format is
-            7       6         5         4        3         2           1        0
-        -------------------------------------------------------------------------------
-        |    L   |        0         |        A         |    X     |     W   |    R    |
-        -------------------------------------------------------------------------------
-        R: indicate that the PMP entry permits to read
-        W: indicate that the PMP entry permits to write
-        X: indicate that the PMP entry permits to execute
-        A: indicate the address-matching mode: TOR/NA4/NAPOT
-        L: indicate that the PMP entry permits to lock
+        configuration information of PMP entry.The PMP configuration format is:
+        bit0[R]: indicate that the PMP entry permits to read.
+        bit1[W]: indicate that the PMP entry permits to write.
+        bit2[X]: indicate that the PMP entry permits to execute.
+        bit4_3[A]: indicate the address-matching mode: TOR/NA4/NAPOT.
+        bit7[L]: indicate that the PMP entry permits to lock.
       type: unsigned char *
     c-return-value:
       description: >
