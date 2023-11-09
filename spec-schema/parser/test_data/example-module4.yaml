@@ -2,6 +2,7 @@ module:
   name: Platform Discovery
   description: Functions for discovery of platform characteristics
   c-specific: false
+  no-assembler: true
   c-filename: csi_discovery.h
   c-type-declarations:
   - name: csi_timer_count_t
@@ -13,3 +14,28 @@ module:
       c-return-value: 
         description: clock frequency in Hz
         type: const unsigned
+  macros:
+    - name: csi_csr_swap
+      description: >
+        Read contents of a CSR to a temporary variable, write val into
+        the register, then return previous contents.
+      c-params:
+        - name: csr
+          description: CSR name as understood by assembler
+          type: string
+        - name: val
+          description: Value to write to CSR
+          type: int
+      c-return-value: 
+        description: Previous CSR contents
+        type: int
+      code: |
+        #define csi_csr_swap(csr, val)                                  \
+            ({                                                          \
+                rv_csr_t __v = (unsigned long)(val);                    \
+                __ASM volatile("csrrw %0, " STRINGIFY(csr) ", %1"       \
+                            : "=r"(__v)                                 \
+                            : "rK"(__v)                                 \
+                            : "memory");                                \
+                __v;                                                    \
+            })

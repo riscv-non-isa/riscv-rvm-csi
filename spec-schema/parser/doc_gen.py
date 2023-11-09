@@ -1,4 +1,5 @@
 import pathlib
+import re
 from parser_common import format_c_function_prototype, format_c_function_typedef, format_c_enum_typedef
 
 def heading_marker(level):
@@ -18,10 +19,12 @@ def format_text_from_array(input_array):
         out_str += "\n"
     return out_str
 
-def preprocess_links(text, linked_sections):
-    '''Searches text for matches within linked_sections, and replaces with links'''
+def preprocess_descriptive_text(text, linked_sections):
+    '''Searches text for matches within linked_sections, and replaces with links. 
+Also escapes any asciidoc special characters.'''
     for s in linked_sections:
         text = text.replace(s, '<<' + s + ', ' + s + '>>')
+    text = re.sub(r"(\s+)_(.+)_", r"\1\_\2_", text) # Escape use of _ that could be interpreted as italics
     return text
 
 def format_adoc_type_declaration(declaration):
@@ -111,16 +114,16 @@ def format_adoc_function(function, linked_sections):
     out_str += format_c_function_prototype(function)
     out_str += "----\n\n"
 
-    out_str += preprocess_links(function['description'], linked_sections) + "\n\n"
+    out_str += preprocess_descriptive_text(function['description'], linked_sections) + "\n\n"
     if 'notes' in function.keys():
         for note in function['notes']:
-            out_str += preprocess_links(note, linked_sections) + "\n\n"
+            out_str += preprocess_descriptive_text(note, linked_sections) + "\n\n"
     
     out_str += heading_marker(4) + "Return\n"
     
     if 'c-return-value' in function.keys():
         out_str += "`" + function['c-return-value']['type'] + "` - " + \
-                preprocess_links(function['c-return-value']['description'], linked_sections) + "\n\n"
+                preprocess_descriptive_text(function['c-return-value']['description'], linked_sections) + "\n\n"
     
     out_str += heading_marker(4) + "Parameters\n"
     
@@ -133,8 +136,8 @@ def format_adoc_function(function, linked_sections):
                 param_type = param_type.rstrip('* ')
                 param_name = "*" + param_name
                                         
-            out_str += preprocess_links(param_type, linked_sections) + " `" + param_name + "` - " + \
-                    preprocess_links(param['description'],linked_sections) + "\n\n"
+            out_str += preprocess_descriptive_text(param_type, linked_sections) + " `" + param_name + "` - " + \
+                    preprocess_descriptive_text(param['description'],linked_sections) + "\n\n"
             
             if 'notes' in param.keys():
                 out_str += format_text_from_array(param['notes'])
@@ -144,6 +147,53 @@ def format_adoc_function(function, linked_sections):
         out_str += "Function takes no parameters\n\n"
     
     return out_str   
+
+def format_adoc_macro(macro, linked_sections):
+    ''' Builds adoc level 3 & 4 section for supplied macro declaration.
+        Returns function adoc string.
+    '''
+    out_str = heading_marker(3) + macro['name'] + '[[' + macro['name'] + ']]' "\n"
+    out_str += '''
+[source, c]
+----
+'''
+    out_str += macro['code']
+    out_str += "\n----\n\n"
+
+    out_str += preprocess_descriptive_text(macro['description'], linked_sections) + "\n"
+
+    if 'notes' in macro.keys():
+        for note in macro['notes']:
+            out_str += note + "\n\n"
+    
+    out_str += heading_marker(4) + "Return\n"
+    
+    if 'c-return-value' in macro.keys():
+        out_str += "`" + macro['c-return-value']['type'] + "` - " + \
+                macro['c-return-value']['description'] + "\n\n"
+    
+    out_str += heading_marker(4) + "Parameters\n"
+    
+    if 'c-params' in macro.keys():
+        for param in macro['c-params']:
+                        
+            param_type = param['type']
+            param_name = param['name']
+            if param_type[-1] == '*': # pointer
+                param_type = param_type.rstrip('* ')
+                param_name = "*" + param_name
+                                        
+            out_str += param_type + " `" + param_name + "` - " + param['description'] + "\n\n"
+            
+            if 'notes' in param.keys():
+                out_str += format_text_from_array(param['notes'])
+            out_str += "\n"
+    else:
+        out_str += "Macro takes no parameters\n\n"
+
+    return out_str
+
+
 
 def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, linked_sections):
     ''' Builds adoc file for a module.
@@ -160,18 +210,18 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, l
     out_str += heading_marker(1) + module['c-filename'] + " - " + module['name'] + "\n"
     out_str += ":toc:\n"
     
-    out_str += preprocess_links(module['description'], linked_sections) + "\n\n"
+    out_str += preprocess_descriptive_text(module['description'], linked_sections) + "\n\n"
     
     if 'notes' in module.keys() or 'c-specific-notes' in module.keys():
         out_str += heading_marker(2) + "Notes\n"
     
     if 'notes' in module.keys():
         for note in module['notes']:
-            out_str += preprocess_links(note, linked_sections)
+            out_str += preprocess_descriptive_text(note, linked_sections)
             out_str += "\n\n"
     
     if 'c-specific-notes' in module.keys():
-        out_str += preprocess_links(format_text_from_array(module['c-specific-notes']), linked_sections)
+        out_str += preprocess_descriptive_text(format_text_from_array(module['c-specific-notes']), linked_sections)
         out_str += "\n"
     
     # Add type declarations
@@ -187,6 +237,13 @@ def generate_c_module_adoc(module, out_dir, module_sub_dir, adoc_optimization, l
         out_str += heading_marker(2) + "Functions\n"
         for function in module['functions']:
             out_str += format_adoc_function(function, linked_sections)
+            out_str += "\n"
+        out_str += "\n"
+
+    if 'macros' in module.keys():
+        out_str += heading_marker(2) + "Macros\n"
+        for macro in module['macros']:
+            out_str += format_adoc_macro(macro, linked_sections)
             out_str += "\n"
         out_str += "\n"
 
