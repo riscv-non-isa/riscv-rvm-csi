@@ -13,6 +13,31 @@
 #include "csi_types.h"
 
 /*
+ * Attribute definitions of PMP entry: PMP_ATTR_FLAG_R: indicate that the PMP entry
+ * permits to read PMP_ATTR_FLAG_W: indicate that the PMP entry permits to write
+ * PMP_ATTR_FLAG_X: indicate that the PMP entry permits to execute PMP_ATTR_FLAG_L:
+ * indicate that the PMP entry permits to lock
+ */
+#define PMP_ATTR_FLAG_R				    0x01
+#define PMP_ATTR_FLAG_W				    0x02
+#define PMP_ATTR_FLAG_X				    0x04
+#define PMP_ATTR_FLAG_L				    0x80
+
+/*
+ * Address-matching definitions of PMP entry: PMP_ATTR_ADDR_MATCHING_DISABLED:
+ * indicate that the PMP entry is disabled PMP_ATTR_ADDR_MATCHING_TOR: indicate
+ * that the PMP entry's address-matching is TOR PMP_ATTR_ADDR_MATCHING_NA4:
+ * indicate that the PMP entry's address-matching is NA4
+ * PMP_ATTR_ADDR_MATCHING_NAPOT: indicate that the PMP entry's address-matching is
+ * NAPOT
+ */
+#define PMP_ATTR_ADDR_MATCHING_DISABLED 0x0
+#define PMP_ATTR_ADDR_MATCHING_TOR		  0x08
+#define PMP_ATTR_ADDR_MATCHING_NA4		  0x10
+#define PMP_ATTR_ADDR_MATCHING_NAPOT	  0x18
+
+
+/*
  * Get the number of PMP entries for the hard id. If the hart id is invalid, such
  * as out of support range, it should return an error
  *
@@ -63,31 +88,6 @@ csi_status_t csi_pmp_set_entry(unsigned int idx, unsigned long base_addr, unsign
  * @return : Status code
  */
 csi_status_t csi_pmp_get_entry(unsigned int idx, unsigned long *base_addr, unsigned long *size, unsigned char *pmp_attr);
-
-
-/*
- * Attribute definitions of PMP entry: PMP_ATTR_FLAG_R: indicate that the PMP entry
- * permits to read PMP_ATTR_FLAG_W: indicate that the PMP entry permits to write
- * PMP_ATTR_FLAG_X: indicate that the PMP entry permits to execute PMP_ATTR_FLAG_L:
- * indicate that the PMP entry permits to lock
- */
-#define PMP_ATTR_FLAG_R				    0x01
-#define PMP_ATTR_FLAG_W				    0x02
-#define PMP_ATTR_FLAG_X				    0x04
-#define PMP_ATTR_FLAG_L				    0x80
-
-/*
- * Address-matching definitions of PMP entry: PMP_ATTR_ADDR_MATCHING_DISABLED:
- * indicate that the PMP entry is disabled PMP_ATTR_ADDR_MATCHING_TOR: indicate
- * that the PMP entry's address-matching is TOR PMP_ATTR_ADDR_MATCHING_NA4:
- * indicate that the PMP entry's address-matching is NA4
- * PMP_ATTR_ADDR_MATCHING_NAPOT: indicate that the PMP entry's address-matching is
- * NAPOT
- */
-#define PMP_ATTR_ADDR_MATCHING_DISABLED 0x0
-#define PMP_ATTR_ADDR_MATCHING_TOR		  0x08
-#define PMP_ATTR_ADDR_MATCHING_NA4		  0x10
-#define PMP_ATTR_ADDR_MATCHING_NAPOT	  0x18
 
 
 #endif /* CSI_LL_PMP_H */ 

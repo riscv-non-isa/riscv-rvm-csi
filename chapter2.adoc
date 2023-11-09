@@ -135,6 +135,7 @@ the macros CSI_LOG_ERR, CSI_LOG_WARN and CSI_LOG_INFO.  See documentation of the
 
 include::auto-gen/modules/csi_types_h.adoc[]
 include::auto-gen/modules/csi_ll_h.adoc[]
+include::auto-gen/modules/csi_ll_csr_access_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupt_sources_h.adoc[]
 include::auto-gen/modules/csi_hl_interrupts_h.adoc[]
 include::auto-gen/modules/csi_dl_uart_h.adoc[]

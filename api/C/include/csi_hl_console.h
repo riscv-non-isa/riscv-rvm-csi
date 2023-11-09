@@ -44,61 +44,6 @@
 #include "csi_types.h"
 
 /*
- * Configure a circular buffer for use by csi_uprintf when CSI_UPRINTF_OUTPUT is
- * defined as CSI_UPRINTF_CIRCBUFF.  This function must be called once, before ever
- * calling csi_uprintf in that case, and before ever calling csi_uprintf_circbuff.
- * It does not need to be called if not using circular buffer output mode.
- *
- * @param buff: Pointer to circular buffer to use for console output.
- * @param size_bytes: Circular buffer size in bytes.
- * @return : Status of operation
- */
-csi_status_t csi_set_uprintf_circbuff(void *buff, unsigned size_bytes);
-
-/*
- * Configure csi_uprintf operation for use when CSI_UPRINTF_OUTPUT is defined as
- * CSI_UPRINTF_UART.  This function must be called once, before ever calling
- * csi_uprintf in that case, and before ever calling csi_uprintf_uart.  It does not
- * need to be called if not using UART output mode.
- *
- * @param uart: Pointer to a UART object which must be initialized (through a call
- * to csi_uart_init) prior to use.
- * @return : Status of operation
- */
-csi_status_t csi_set_uprintf_uart(csi_uart_t *uart);
-
-/*
- * Semi-hosting version of csi_uprintf.  This is not normally called directly by
- * application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT to
- * be CSI_UPRINTF_SEMIHOST.
- *
- * @param fmt: Formatted string matching that used by printf
- * @return : Number of characters printed.  A negative number indicates an error.
- */
-int csi_uprintf_semihost(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
-
-/*
- * Circular buffering version of csi_uprintf.  This is not normally called directly
- * by application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT
- * to be CSI_UPRINTF_CIRCBUFF.
- *
- * @param fmt: Formatted string matching that used by printf
- * @return : Number of characters printed.  A negative number indicates an error.
- */
-int csi_uprintf_circbuff(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
-
-/*
- * UART version of csi_uprintf.  This is not normally called directly by
- * application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT to
- * be CSI_UPRINTF_UART.
- *
- * @param fmt: Formatted string matching that used by printf
- * @return : Number of characters printed.  A negative number indicates an error.
- */
-int csi_uprintf_uart(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
-
-
-/*
  * Max number of characters that can be printed by a single csi_uprintf call.  This
  * determines the amount of space that the function call will occupy on the stack
  */
@@ -187,6 +132,61 @@ int csi_uprintf_uart(char const *fmt, ...) __attribute__((format(printf, 1, 2)))
 #else
 #define CSI_LOG_INFO(...)
 #endif
+
+
+/*
+ * Configure a circular buffer for use by csi_uprintf when CSI_UPRINTF_OUTPUT is
+ * defined as CSI_UPRINTF_CIRCBUFF.  This function must be called once, before ever
+ * calling csi_uprintf in that case, and before ever calling csi_uprintf_circbuff.
+ * It does not need to be called if not using circular buffer output mode.
+ *
+ * @param buff: Pointer to circular buffer to use for console output.
+ * @param size_bytes: Circular buffer size in bytes.
+ * @return : Status of operation
+ */
+csi_status_t csi_set_uprintf_circbuff(void *buff, unsigned size_bytes);
+
+/*
+ * Configure csi_uprintf operation for use when CSI_UPRINTF_OUTPUT is defined as
+ * CSI_UPRINTF_UART.  This function must be called once, before ever calling
+ * csi_uprintf in that case, and before ever calling csi_uprintf_uart.  It does not
+ * need to be called if not using UART output mode.
+ *
+ * @param uart: Pointer to a UART object which must be initialized (through a call
+ * to csi_uart_init) prior to use.
+ * @return : Status of operation
+ */
+csi_status_t csi_set_uprintf_uart(csi_uart_t *uart);
+
+/*
+ * Semi-hosting version of csi_uprintf.  This is not normally called directly by
+ * application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT to
+ * be CSI_UPRINTF_SEMIHOST.
+ *
+ * @param fmt: Formatted string matching that used by printf
+ * @return : Number of characters printed.  A negative number indicates an error.
+ */
+int csi_uprintf_semihost(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
+
+/*
+ * Circular buffering version of csi_uprintf.  This is not normally called directly
+ * by application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT
+ * to be CSI_UPRINTF_CIRCBUFF.
+ *
+ * @param fmt: Formatted string matching that used by printf
+ * @return : Number of characters printed.  A negative number indicates an error.
+ */
+int csi_uprintf_circbuff(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
+
+/*
+ * UART version of csi_uprintf.  This is not normally called directly by
+ * application writers. Rather, call csi_uprintf and define CSI_UPRINTF_OUTPUT to
+ * be CSI_UPRINTF_UART.
+ *
+ * @param fmt: Formatted string matching that used by printf
+ * @return : Number of characters printed.  A negative number indicates an error.
+ */
+int csi_uprintf_uart(char const *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 
 #endif /* CSI_HL_CONSOLE_H */ 
