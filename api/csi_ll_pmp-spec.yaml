@@ -1,0 +1,127 @@
+module:
+  name: Low-Level PMP API
+  description: >
+    This module provides functionality for PMP configuration.
+  c-specific: true
+  c-filename: csi_ll_pmp.h
+  c-include-files:
+  - filename: csi_types.h
+    system-header: false
+
+  c-definitions:
+  - comment: >
+      Attribute definitions of PMP entry:
+      PMP_ATTR_FLAG_R: indicate that the PMP entry permits to read
+      PMP_ATTR_FLAG_W: indicate that the PMP entry permits to write
+      PMP_ATTR_FLAG_X: indicate that the PMP entry permits to execute
+      PMP_ATTR_FLAG_L: indicate that the PMP entry permits to lock
+    fragment: |
+      #define PMP_ATTR_FLAG_R				    0x01
+      #define PMP_ATTR_FLAG_W				    0x02
+      #define PMP_ATTR_FLAG_X				    0x04
+      #define PMP_ATTR_FLAG_L				    0x80
+  - comment: >
+      Address-matching definitions of PMP entry:
+      PMP_ATTR_ADDR_MATCHING_DISABLED: indicate that the PMP entry is disabled
+      PMP_ATTR_ADDR_MATCHING_TOR: indicate that the PMP entry's address-matching is TOR
+      PMP_ATTR_ADDR_MATCHING_NA4: indicate that the PMP entry's address-matching is NA4
+      PMP_ATTR_ADDR_MATCHING_NAPOT: indicate that the PMP entry's address-matching is
+      NAPOT
+    fragment: |
+      #define PMP_ATTR_ADDR_MATCHING_DISABLED 0x0
+      #define PMP_ATTR_ADDR_MATCHING_TOR		  0x08
+      #define PMP_ATTR_ADDR_MATCHING_NA4		  0x10
+      #define PMP_ATTR_ADDR_MATCHING_NAPOT	  0x18
+
+  functions:
+  - name: csi_pmp_get_num_entries
+    description: >
+      Get the number of PMP entries for the hard id.
+      If the hart id is invalid, such as out of support range, it should return
+      an error
+    c-params:
+    - name: hart_id
+      description: >
+        The hart id used to get the number of pmp entry
+      type: unsigned int
+    c-return-value:
+      description: >
+        The number of PMP entry; -1 will be returned as and error code if the
+        input is invalid.
+      type: int
+  - name: csi_pmp_set_entry
+    description: >
+      Set PMP entry.
+
+      This function only can be called in M-mode. If it is called
+      in other mode, it will cause an access fault exception. When this function is 
+      called with success, it will not be effective untill the core exits M-mode.
+
+      Also, an error should be returned if the input parameters are invalid, such as idx
+      out of range, address or size is not supported etc.
+    c-params:
+    - name: idx
+      description: >
+        The PMP entry index
+      type: unsigned int
+    - name: base_addr
+      description: >
+        The base address of this entry need to be configured. If the
+        address-matching mode is TOR, it would be ignored. And the base address of this
+        entry would be address of previous entry
+      type: unsigned long
+    - name: size
+      description: >
+        The size of this range need to be configured.
+      type: unsigned long
+    - name: pmp_attr
+      description: >
+        The configuration information of PMP entry.The PMP configuration
+        format is:
+        bit0[R]: indicate that the PMP entry permits to read.
+        bit1[W]: indicate that the PMP entry permits to write.
+        bit2[X]: indicate that the PMP entry permits to execute.
+        bit4_3[A]: indicate the address-matching mode: TOR/NA4/NAPOT.
+        bit7[L]: indicate that the PMP entry permits to lock.
+      type: unsigned char
+    c-return-value:
+      description: >
+        Status code
+      type: csi_status_t
+  - name: csi_pmp_get_entry
+    description: >
+        Get PMP entry configure information.
+
+        This function only can be called in M-mode. If it is called
+        in other mode, it will cause an access fault exception.
+        Also, an error should be returned if the input parameters are invalid, such as idx
+        out of range.
+    c-params:
+    - name: idx
+      description: >
+        The index of PMP config entries
+      type: unsigned int
+    - name: base_addr
+      description: >
+        A pointer to the buffer which is used to output the base address
+        of this entry
+      type: unsigned long *
+    - name: size
+      description: >
+       A pointer to the buffer which is used to output the size of this entry
+      type: unsigned long *
+    - name: pmp_attr
+      description: >
+        A pointer to the buffer which is used to output the the
+        configuration information of PMP entry.The PMP configuration format is:
+        bit0[R]: indicate that the PMP entry permits to read.
+        bit1[W]: indicate that the PMP entry permits to write.
+        bit2[X]: indicate that the PMP entry permits to execute.
+        bit4_3[A]: indicate the address-matching mode: TOR/NA4/NAPOT.
+        bit7[L]: indicate that the PMP entry permits to lock.
+      type: unsigned char *
+    c-return-value:
+      description: >
+        Status code
+      type: csi_status_t
+

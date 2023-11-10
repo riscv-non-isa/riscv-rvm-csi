@@ -15,3 +15,4 @@ modules:
   - csi_dl_uart-spec.yaml
   - csi_hl_console-spec.yaml
   - csi_ll_csr_access-spec.yaml
+  - csi_ll_pmp-spec.yaml
